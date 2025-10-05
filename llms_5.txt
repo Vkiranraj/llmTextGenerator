@@ -1,0 +1,12 @@
+# SystemDesign.io
+
+> Collection of System Design Questions and their Solutions
+
+This document lists key resources discovered from https://systemdesign.io/. Only top-level pages (depth ≤ 1) are included.
+
+## Other
+
+- [SystemDesign.io](https://systemdesign.io/question/design-a-system-to-view-latest-stock-prices): Collection of System Design Questions and their Solutions
+- [SystemDesign.io](https://systemdesign.io/question/design-google-analytics-dashboard-and-pipeline): Collection of System Design Questions and their Solutions
+- [SystemDesign.io](https://systemdesign.io/question/design-a-credit-card-processing-system): Collection of System Design Questions and their Solutions
+- [SystemDesign.io](https://systemdesign.io/question/design-a-metrics-logging-and-aggregation-system): Collection of System Design Questions and their Solutions

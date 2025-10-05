@@ -1,0 +1,12 @@
+# Investopedia
+
+> Investopedia is the world&#039;s leading source of financial content on the web, ranging from market news to retirement strategies, investing education to insights from advisors.
+
+This document lists key resources discovered from https://www.investopedia.com/. Only top-level pages (depth ≤ 1) are included.
+
+## Other
+
+- [Economics](https://www.investopedia.com/economics-4689800): The goals of economics are nothing less than to understand how and why we do what we do: how do we allocate, distribute and consume resources? Browse Investopedia’s expert-written library to learn more.
+- [Rare Earth Stocks Soar on Speculation of More White House Deals To Come](https://www.investopedia.com/rare-earth-stocks-soar-on-speculation-of-more-white-house-deals-to-come-usar-mp-lac-11823917): Shares of USA Rare Earth soared on Friday after its CEO said the supplier of rare earth magnets and minerals was in talks with the Trump White House.
+- [Terms Beginning With 'V'](https://www.investopedia.com/terms-beginning-with-v-4769372): Investopedia's comprehensive list and definitions of business terms that start with 'V'
+- [Retirement Planning: Strategies, Tools, Choices](https://www.investopedia.com/retirement-planning-4689695): Planning for retirement helps you determine retirement income goals and prepare for the unexpected. Browse Investopedia’s expert-written library to learn more.

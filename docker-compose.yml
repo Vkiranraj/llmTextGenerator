@@ -1,0 +1,73 @@
+version: '3.8'
+
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: llm-text-generator-backend
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./backend/data:/app/data
+      - ./backend/logs:/app/logs
+      - ./backend/llms_*.txt:/app/llms_*.txt
+    environment:
+      - DATABASE_URL=sqlite:///./data/url_monitor.db
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: llm-text-generator-frontend
+    ports:
+      - "3000:3000"
+    depends_on:
+      - backend
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3000"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # Monitoring service (runs the cron job)
+  monitor:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: llm-text-generator-monitor
+    volumes:
+      - ./backend/data:/app/data
+      - ./backend/logs:/app/logs
+      - ./backend/llms_*.txt:/app/llms_*.txt
+    environment:
+      - DATABASE_URL=sqlite:///./data/url_monitor.db
+    depends_on:
+      - backend
+    restart: unless-stopped
+    command: >
+      sh -c "
+        echo 'Setting up monitoring...' &&
+        echo '0 2 * * * cd /app && python scripts/monitor_urls.py >> /app/logs/monitor.log 2>&1' | crontab - &&
+        echo 'Starting cron daemon...' &&
+        cron -f
+      "
+    healthcheck:
+      test: ["CMD", "pgrep", "cron"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+volumes:
+  data:
+  logs:
