@@ -43,21 +43,21 @@ COPY --from=frontend-builder /app/frontend/build ./frontend/build
 # Copy nginx configuration
 COPY nginx.conf /etc/nginx/nginx.conf
 
+# Copy startup script
+COPY start.sh /app/start.sh
+
 # Create necessary directories
 RUN mkdir -p /app/logs /app/data
 
 # Make scripts executable
 RUN chmod +x scripts/monitor_urls.py
+RUN chmod +x /app/start.sh
+
+# Install curl for health checks
+RUN apt-get update && apt-get install -y curl && rm -rf /var/lib/apt/lists/*
 
 # Expose port
 EXPOSE 80
 
 # Start all services
-CMD sh -c " \
-    # Start FastAPI backend in the background \
-    uvicorn app.main:app --host 0.0.0.0 --port 8000 & \
-    # Start Playwright monitor in the background \
-    python scripts/monitor_urls.py & \
-    # Start Nginx in the foreground \
-    nginx -g 'daemon off;' \
-"
+CMD ["/app/start.sh"]

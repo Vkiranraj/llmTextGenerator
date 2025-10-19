@@ -36,6 +36,13 @@ def read_root():
     """
     return {"message": "URL Monitor API is running"}
 
+@app.get("/health", tags=["Health"])
+def health_check():
+    """
+    Health check endpoint for Railway deployment.
+    """
+    return {"status": "healthy", "message": "Service is running"}
+
 @app.post("/jobs/", response_model=schemas.JobResponse, tags=["Jobs"])
 def create_new_job(job: schemas.JobCreate, db: Session = Depends(get_db)):
     # Check if URL already exists
