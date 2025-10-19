@@ -215,3 +215,52 @@ def trigger_monitoring():
         return {"message": "Monitoring completed successfully", "status": "success"}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Monitoring failed: {str(e)}")
+
+@app.get("/monitor/status")
+def get_monitor_status():
+    """
+    Check monitoring status and cron configuration.
+    """
+    import os
+    import subprocess
+    from datetime import datetime
+    
+    # Check if cron is running
+    try:
+        result = subprocess.run(['pgrep', 'cron'], capture_output=True, text=True)
+        cron_running = result.returncode == 0
+    except:
+        cron_running = False
+    
+    # Get cron jobs
+    try:
+        result = subprocess.run(['crontab', '-l'], capture_output=True, text=True)
+        cron_jobs = result.stdout if result.returncode == 0 else "No cron jobs found"
+    except:
+        cron_jobs = "Unable to read cron jobs"
+    
+    # Check monitoring log
+    log_file = "/app/logs/monitor.log"
+    log_exists = os.path.exists(log_file)
+    log_size = os.path.getsize(log_file) if log_exists else 0
+    
+    # Get last few lines of log
+    last_log_lines = []
+    if log_exists and log_size > 0:
+        try:
+            with open(log_file, 'r') as f:
+                lines = f.readlines()
+                last_log_lines = lines[-10:]  # Last 10 lines
+        except:
+            last_log_lines = ["Unable to read log file"]
+    
+    return {
+        "cron_running": cron_running,
+        "cron_jobs": cron_jobs,
+        "demo_mode": os.getenv("DEMO_MODE", "false"),
+        "monitoring_interval": os.getenv("MONITORING_INTERVAL_MINUTES", "1440"),
+        "log_file_exists": log_exists,
+        "log_file_size": log_size,
+        "last_log_lines": last_log_lines,
+        "current_time": datetime.now().isoformat()
+    }

@@ -52,20 +52,30 @@ RUN chmod +x scripts/monitor_urls.py
 # Expose port
 EXPOSE 80
 
+# Create startup script
+RUN echo '#!/bin/bash' > /app/start.sh && \
+    echo 'echo "Starting services..."' >> /app/start.sh && \
+    echo 'echo "DEMO_MODE: $DEMO_MODE"' >> /app/start.sh && \
+    echo 'echo "MONITORING_INTERVAL_MINUTES: $MONITORING_INTERVAL_MINUTES"' >> /app/start.sh && \
+    echo 'if [ "$DEMO_MODE" = "true" ]; then' >> /app/start.sh && \
+    echo '    echo "Setting up demo mode cron (every 5 minutes)"' >> /app/start.sh && \
+    echo '    echo "*/5 * * * * cd /app && /usr/local/bin/python /app/scripts/monitor_urls.py >> /app/logs/monitor.log 2>&1" | crontab -' >> /app/start.sh && \
+    echo 'else' >> /app/start.sh && \
+    echo '    echo "Setting up production mode cron (daily at 2 AM)"' >> /app/start.sh && \
+    echo '    echo "0 2 * * * cd /app && /usr/local/bin/python /app/scripts/monitor_urls.py >> /app/logs/monitor.log 2>&1" | crontab -' >> /app/start.sh && \
+    echo 'fi' >> /app/start.sh && \
+    echo 'echo "Cron jobs set up:"' >> /app/start.sh && \
+    echo 'crontab -l' >> /app/start.sh && \
+    echo 'echo "Starting cron service..."' >> /app/start.sh && \
+    echo 'service cron start' >> /app/start.sh && \
+    echo 'echo "Starting FastAPI backend..."' >> /app/start.sh && \
+    echo 'uvicorn app.main:app --host 0.0.0.0 --port 8000 &' >> /app/start.sh && \
+    echo 'echo "Starting Nginx..."' >> /app/start.sh && \
+    echo 'nginx -g "daemon off;"' >> /app/start.sh && \
+    chmod +x /app/start.sh
+
+# Expose port
+EXPOSE 80
+
 # Start all services
-CMD sh -c " \
-    # Set up cron job based on DEMO_MODE \
-    if [ \"\$DEMO_MODE\" = \"true\" ]; then \
-        echo \"*/5 * * * * cd /app && python scripts/monitor_urls.py >> /app/logs/monitor.log 2>&1\" | crontab -; \
-        echo \"Demo mode: Monitoring every 5 minutes\"; \
-    else \
-        echo \"0 2 * * * cd /app && python scripts/monitor_urls.py >> /app/logs/monitor.log 2>&1\" | crontab -; \
-        echo \"Production mode: Monitoring daily at 2:00 AM\"; \
-    fi; \
-    # Start cron service \
-    service cron start & \
-    # Start FastAPI backend in the background \
-    uvicorn app.main:app --host 0.0.0.0 --port 8000 & \
-    # Start Nginx in the foreground \
-    nginx -g 'daemon off;' \
-"
+CMD ["/app/start.sh"]
