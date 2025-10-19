@@ -44,8 +44,8 @@ class Settings(BaseSettings):
     OPENAI_TEMPERATURE: float = 0.3
     
     # Demo configuration
-    DEMO_MODE: bool = False
-    MONITORING_INTERVAL_MINUTES: int = 1440  # Default to 24 hours (1440 minutes)
+    DEMO_MODE: bool = True  # Force demo mode for now
+    MONITORING_INTERVAL_MINUTES: int = 5  # Force 5 minutes for demo
 
     class Config:
         case_sensitive = True

@@ -262,5 +262,20 @@ def get_monitor_status():
         "log_file_exists": log_exists,
         "log_file_size": log_size,
         "last_log_lines": last_log_lines,
-        "current_time": datetime.now().isoformat()
+        "current_time": datetime.now().isoformat(),
+        "all_env_vars": {k: v for k, v in os.environ.items() if "DEMO" in k or "MONITORING" in k}
+    }
+
+@app.get("/debug/env")
+def debug_environment():
+    """
+    Debug environment variables to see what Railway is passing.
+    """
+    import os
+    return {
+        "DEMO_MODE": os.getenv("DEMO_MODE"),
+        "MONITORING_INTERVAL_MINUTES": os.getenv("MONITORING_INTERVAL_MINUTES"),
+        "all_demo_vars": {k: v for k, v in os.environ.items() if "DEMO" in k or "MONITORING" in k},
+        "python_path": os.system("which python3"),
+        "python_version": os.system("python3 --version")
     }
