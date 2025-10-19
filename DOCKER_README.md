@@ -204,6 +204,7 @@ ENCRYPTION_KEY=your-encryption-key-for-sensitive-data
 SMTP_USER=your-email@gmail.com
 SMTP_PASSWORD=your-app-password
 FROM_EMAIL=noreply@yourdomain.com
+OPENAI_API_KEY=your-openai-api-key
 ```
 
 **Generate secure keys:**
@@ -245,6 +246,12 @@ GRACE_PERIOD_CRAWLS=2
 # Frontend Variables
 REACT_APP_API_BASE_URL=
 
+# OpenAI Configuration
+OPENAI_API_KEY=your-openai-api-key
+OPENAI_MODEL=gpt-4o-mini
+OPENAI_MAX_TOKENS=500
+OPENAI_TEMPERATURE=0.3
+
 # Docker Variables
 NGINX_PORT=80
 DOMAIN_NAME=localhost
@@ -275,6 +282,12 @@ DOMAIN_NAME=localhost
 #### Frontend Variables
 - `REACT_APP_API_BASE_URL`: API base URL for frontend (leave empty for nginx proxy)
 
+#### OpenAI Configuration
+- `OPENAI_API_KEY`: Your OpenAI API key (required for AI-enhanced content)
+- `OPENAI_MODEL`: OpenAI model to use (default: `gpt-4o-mini`)
+- `OPENAI_MAX_TOKENS`: Maximum tokens per request (default: 500)
+- `OPENAI_TEMPERATURE`: Response creativity (default: 0.3)
+
 #### Docker Variables
 - `NGINX_PORT`: Nginx port (default: 80)
 - `DOMAIN_NAME`: Domain name for nginx (default: localhost)
@@ -287,6 +300,7 @@ For Railway deployment, set these variables in your Railway dashboard:
 - `BASE_URL`: Your Railway app URL
 - `SECRET_KEY`: Generate a secure random string
 - `SMTP_HOST`, `SMTP_USER`, `SMTP_PASSWORD`, `FROM_EMAIL`
+- `OPENAI_API_KEY`: Your OpenAI API key for AI-enhanced content
 
 **Optional:** All other variables will use defaults if not set.
 

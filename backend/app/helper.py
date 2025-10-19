@@ -1,6 +1,7 @@
 import hashlib
 from .core.config import settings
 from urllib.parse import urlparse
+from .openai_service import openai_service
 
 def categorize_url(url: str) -> str:
     """Heuristic section categorization based on URL path."""
@@ -17,7 +18,7 @@ def get_text_hash(text: str) -> str:
     return hashlib.sha256(text.encode("utf-8")).hexdigest()
 
 def generate_llms_txt(crawled_pages: list, root_url: str) -> str:
-    """Aggregate crawled pages into one compliant llms.txt."""
+    """Aggregate crawled pages into one compliant llms.txt with AI enhancement."""
     if not crawled_pages:
         return ""
     
@@ -41,23 +42,49 @@ def generate_llms_txt(crawled_pages: list, root_url: str) -> str:
 
     if desc:
         lines.append(f"> {desc}\n")
+    # Use AI-powered categorization and summaries
+    try:
+        # Get AI analysis for all pages (excluding root page)
+        pages_to_analyze = pages_as_dicts[1:]
+        if pages_to_analyze:
+            ai_analysis = openai_service.batch_analyze_pages(pages_to_analyze)
+            
+            # Group by AI categories
+            sections = {}
+            for i, page in enumerate(pages_to_analyze):
+                ai_category = ai_analysis[i]["ai_category"] if i < len(ai_analysis) else "Other"
+                ai_summary = ai_analysis[i]["ai_summary"] if i < len(ai_analysis) else "No summary available"
+                
+                # Add AI analysis to page data
+                enhanced_page = {
+                    **page,
+                    "ai_category": ai_category,
+                    "ai_summary": ai_summary
+                }
+                
+                sections.setdefault(ai_category, []).append(enhanced_page)
+        else:
+            sections = {}
+            
+    except Exception as e:
+        # Fallback to heuristic categorization if AI fails
+        sections = {}
+        for page in pages_as_dicts[1:]:
+            section = categorize_url(page["url"])
+            sections.setdefault(section, []).append(page)
 
-    lines.append(
-        f"This document lists key resources discovered from {root_url}. "
-        f"Only top-level pages (depth ≤ {settings.MAX_DEPTH}) are included.\n"
-    )
-
-    # Group by section
-    sections = {}
-    for page in pages_as_dicts[1:]:
-        section = categorize_url(page["url"])
-        sections.setdefault(section, []).append(page)
-
+    # Generate sections with AI-enhanced content
     for section, pages in sections.items():
         lines.append(f"## {section}\n")
         for p in pages:
             link_text = p["title"] or p["url"]
-            notes = p.get("description") or p.get("content", "")
+            
+            # Use AI summary if available, otherwise fallback to description/content
+            if "ai_summary" in p and p["ai_summary"] != "No summary available":
+                notes = p["ai_summary"]
+            else:
+                notes = p.get("description") or p.get("content", "")
+            
             note_suffix = f": {notes}" if notes else ""
             lines.append(f"- [{link_text}]({p['url']}){note_suffix}")
 

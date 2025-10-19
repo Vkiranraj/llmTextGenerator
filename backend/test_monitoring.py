@@ -12,6 +12,6 @@ sys.path.append(str(Path(__file__).parent))
 from scripts.monitor_urls import monitor_urls
 
 if __name__ == "__main__":
-    print("🚀 Manually triggering URL monitoring...")
+    print("Manually triggering URL monitoring...")
     monitor_urls()
-    print("✅ Monitoring completed!")
+    print("Monitoring completed!")

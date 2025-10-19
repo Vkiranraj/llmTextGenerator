@@ -15,7 +15,7 @@ class Settings(BaseSettings):
     BASE_URL: str = "http://localhost:8000"
     
     # Crawling configuration
-    MAX_PAGES: int = 20
+    MAX_PAGES: int = 5
     MAX_DEPTH: int = 1
     MAX_CONTENT_PARAGRAPHS: int = 10
     REQUESTS_TIMEOUT: int = 10
@@ -37,6 +37,12 @@ class Settings(BaseSettings):
     # Security configuration
     SECRET_KEY: str = "your-secret-key-change-in-production"
     ENCRYPTION_KEY: str = ""  # For email token encryption (will use SECRET_KEY if not set)
+    
+    # OpenAI configuration
+    OPENAI_API_KEY: str = "your api key here"
+    OPENAI_MODEL: str = "gpt-4o-mini"
+    OPENAI_MAX_TOKENS: int = 500
+    OPENAI_TEMPERATURE: float = 0.3
 
     class Config:
         case_sensitive = True
