@@ -57,7 +57,7 @@ CMD sh -c " \
     # Start FastAPI backend in the background \
     uvicorn app.main:app --host 0.0.0.0 --port 8000 & \
     # Start Playwright monitor in the background \
-    python scripts/monitor_urls.py & \
+    python3 scripts/monitor_urls.py & \
     # Start Nginx in the foreground \
     nginx -g 'daemon off;' \
 "
