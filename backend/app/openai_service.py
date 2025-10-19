@@ -24,6 +24,7 @@ class OpenAIService:
             logger.warning("OpenAI API key not found. AI features will be disabled.")
         else:
             try:
+                # Initialize OpenAI client with the API key
                 self.client = OpenAI(api_key=api_key)
             except Exception as e:
                 logger.error(f"Failed to initialize OpenAI client: {e}")

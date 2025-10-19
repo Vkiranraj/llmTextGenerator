@@ -74,8 +74,13 @@ def generate_llms_txt(crawled_pages: list, root_url: str) -> str:
             sections.setdefault(section, []).append(page)
 
     # Generate sections with AI-enhanced content
+    first_section = True
     for section, pages in sections.items():
-        lines.append(f"## {section}\n")
+        # Add blank line before section header (except for first section)
+        if not first_section:
+            lines.append("")
+        lines.append(f"## {section}")
+        
         for p in pages:
             link_text = p["title"] or p["url"]
             
@@ -87,6 +92,8 @@ def generate_llms_txt(crawled_pages: list, root_url: str) -> str:
             
             note_suffix = f": {notes}" if notes else ""
             lines.append(f"- [{link_text}]({p['url']}){note_suffix}")
+        
+        first_section = False
 
     return "\n".join(lines)
 
