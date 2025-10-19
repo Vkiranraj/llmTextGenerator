@@ -18,9 +18,9 @@ This guide will help you deploy the LLM Text Generator application using Docker 
 git clone <your-repo-url>
 cd llmTextGenerator
 
-# Set up environment variables
-cp env.example .env
-# Edit .env with your settings
+# Create environment file
+touch .env
+# Edit .env with your settings (see Configuration section below)
 ```
 
 ### 2. Deploy
@@ -36,19 +36,19 @@ docker-compose up -d
 - **API Docs**: http://localhost/api/docs
 - **Backend API**: http://localhost/api/
 
-## 🏗️ Architecture
+## Architecture
 
-The application consists of three Docker services:
+The application consists of four Docker services:
 
 ### Backend Service
 - **Container**: `llm-text-generator-backend`
-- **Port**: 8000
+- **Port**: 8000 (internal)
 - **Technology**: FastAPI + Python 3.9
 - **Features**: URL crawling, LLM text generation, API endpoints
 
 ### Frontend Service
 - **Container**: `llm-text-generator-frontend`
-- **Port**: 3000
+- **Port**: 3000 (internal)
 - **Technology**: React + Node.js 18
 - **Features**: User interface, job management, real-time updates
 
@@ -57,7 +57,13 @@ The application consists of three Docker services:
 - **Technology**: Python + Cron
 - **Features**: Automated URL monitoring, content change detection
 
-## 📊 Service Management
+### Nginx Service
+- **Container**: `llm-text-generator-nginx`
+- **Port**: 80 (external)
+- **Technology**: Nginx Alpine
+- **Features**: Reverse proxy, load balancing, SSL termination
+
+## Service Management
 
 ### View Service Status
 ```bash
@@ -67,17 +73,24 @@ docker-compose ps
 ### View Logs
 ```bash
 # All services
-./docker-logs.sh
+docker-compose logs
 
 # Specific service
-./docker-logs.sh backend
-./docker-logs.sh frontend
-./docker-logs.sh monitor
+docker-compose logs nginx
+docker-compose logs backend
+docker-compose logs frontend
+docker-compose logs monitor
+
+# Follow logs in real-time
+docker-compose logs -f nginx
+docker-compose logs -f backend
+docker-compose logs -f frontend
+docker-compose logs -f monitor
 ```
 
 ### Stop Services
 ```bash
-./docker-stop.sh
+docker-compose down
 ```
 
 ### Restart Services
@@ -85,7 +98,7 @@ docker-compose ps
 docker-compose restart
 ```
 
-## 🔍 Monitoring Features
+## Monitoring Features
 
 ### Automated Monitoring
 - **Schedule**: Daily at 2:00 AM
@@ -108,7 +121,7 @@ docker-compose logs monitor
 docker-compose logs -f monitor
 ```
 
-## 📁 Data Persistence
+## Data Persistence
 
 ### Database
 - **Location**: `./backend/data/url_monitor.db`
@@ -125,10 +138,13 @@ docker-compose logs -f monitor
 - **Files**: `monitor.log`, application logs
 - **Persistence**: Survives container restarts
 
-## 🛠️ Development
+## Development
 
 ### Build Individual Services
 ```bash
+# Build nginx only
+docker-compose build nginx
+
 # Build backend only
 docker-compose build backend
 
@@ -150,6 +166,9 @@ docker-compose up -d --build
 
 ### Access Container Shell
 ```bash
+# Nginx container
+docker-compose exec nginx sh
+
 # Backend container
 docker-compose exec backend bash
 
@@ -160,25 +179,85 @@ docker-compose exec frontend sh
 docker-compose exec monitor bash
 ```
 
-## 🔧 Configuration
+## Configuration
 
 ### Environment Variables
 
-The application is fully parameterized using environment variables. Copy `env.example` to `.env` and configure:
+The application is fully parameterized using environment variables. Create a `.env` file in the project root and configure the variables below:
 
 ```bash
-cp env.example .env
+# Create the environment file
+touch .env
 # Edit .env with your settings
+```
+
+#### Quick Setup (Minimum Configuration)
+
+For a quick start, create a `.env` file with just these essential variables:
+
+```bash
+# Minimum required configuration
+BASE_URL=http://localhost:8000
+SECRET_KEY=your-secret-key-change-in-production
+ENCRYPTION_KEY=your-encryption-key-for-sensitive-data
+SMTP_USER=your-email@gmail.com
+SMTP_PASSWORD=your-app-password
+FROM_EMAIL=noreply@yourdomain.com
+```
+
+**Generate secure keys:**
+```bash
+# Generate SECRET_KEY
+python -c "import secrets; print('SECRET_KEY=' + secrets.token_urlsafe(32))"
+
+# Generate ENCRYPTION_KEY  
+python -c "import secrets; print('ENCRYPTION_KEY=' + secrets.token_urlsafe(32))"
+```
+
+#### Complete .env File Example
+
+For full configuration, create a `.env` file in the project root with the following content:
+
+```bash
+# Required Variables
+BASE_URL=http://localhost:8000
+DATABASE_URL=sqlite:///./data/url_monitor.db
+SECRET_KEY=your-secret-key-change-in-production
+ENCRYPTION_KEY=your-encryption-key-for-sensitive-data
+
+# Email Configuration (Required for notifications)
+SMTP_HOST=smtp.gmail.com
+SMTP_PORT=587
+SMTP_USER=your-email@gmail.com
+SMTP_PASSWORD=your-app-password
+FROM_EMAIL=noreply@yourdomain.com
+
+# Optional Variables (with defaults)
+MAX_PAGES=20
+MAX_DEPTH=1
+MAX_CONTENT_PARAGRAPHS=10
+REQUESTS_TIMEOUT=10
+PLAYWRIGHT_TIMEOUT=60000
+CRAWL_DELAY=2
+GRACE_PERIOD_CRAWLS=2
+
+# Frontend Variables
+REACT_APP_API_BASE_URL=
+
+# Docker Variables
+NGINX_PORT=80
+DOMAIN_NAME=localhost
 ```
 
 #### Required Variables
 - `BASE_URL`: Application base URL (e.g., `http://localhost:8000` or `https://your-domain.com`)
-- `DATABASE_URL`: Database connection string
+- `DATABASE_URL`: Database connection string (default: `sqlite:///./data/url_monitor.db`)
 - `SECRET_KEY`: Application secret key (generate with: `python -c "import secrets; print(secrets.token_urlsafe(32))"`)
+- `ENCRYPTION_KEY`: Encryption key for sensitive data (generate with: `python -c "import secrets; print(secrets.token_urlsafe(32))"`)
 
 #### Email Configuration
-- `SMTP_HOST`: SMTP server hostname
-- `SMTP_PORT`: SMTP server port
+- `SMTP_HOST`: SMTP server hostname (default: `smtp.gmail.com`)
+- `SMTP_PORT`: SMTP server port (default: `587`)
 - `SMTP_USER`: SMTP username
 - `SMTP_PASSWORD`: SMTP password
 - `FROM_EMAIL`: Sender email address
@@ -215,7 +294,7 @@ For Railway deployment, set these variables in your Railway dashboard:
 - **Backend**: 8000 (internal)
 - **Nginx**: 80 (external, configurable via `NGINX_PORT`)
 
-## 🚨 Troubleshooting
+## Troubleshooting
 
 ### Common Issues
 
@@ -261,11 +340,12 @@ docker-compose exec monitor python scripts/monitor_urls.py
 docker-compose ps
 
 # Test endpoints
-curl http://localhost:8000/
-curl http://localhost:3000/
+curl http://localhost/
+curl http://localhost/api/
+curl http://localhost/api/docs
 ```
 
-## 📈 Performance
+## Performance
 
 ### Resource Requirements
 - **CPU**: 2 cores minimum, 4 cores recommended
@@ -277,7 +357,7 @@ curl http://localhost:3000/
 - Allocate sufficient RAM for Playwright browser instances
 - Monitor disk space for generated files
 
-## 🔒 Security
+## Security
 
 ### Network Security
 - Services communicate through Docker internal network
@@ -289,7 +369,7 @@ curl http://localhost:3000/
 - No sensitive data in environment variables
 - Logs contain no sensitive information
 
-## 📝 Logs
+## Logs
 
 ### Log Locations
 - **Application Logs**: `docker-compose logs`
@@ -302,7 +382,7 @@ curl http://localhost:3000/
 sudo logrotate -f /etc/logrotate.conf
 ```
 
-## 🎯 Production Deployment
+## Production Deployment
 
 ### Production Considerations
 1. **Use a reverse proxy** (nginx) for SSL termination
@@ -328,12 +408,12 @@ services:
       - backend
 ```
 
-## 🆘 Support
+## Support
 
 ### Getting Help
-1. Check the logs: `./docker-logs.sh`
+1. Check the logs: `docker-compose logs`
 2. Verify service status: `docker-compose ps`
-3. Test endpoints: `curl http://localhost:8000/`
+3. Test endpoints: `curl http://localhost/`
 4. Check Docker daemon: `docker info`
 
 ### Common Commands
@@ -350,4 +430,4 @@ git pull && docker-compose up --build
 
 ---
 
-🎉 **You're all set!** Your LLM Text Generator is now running in Docker containers with automated monitoring.
+**You're all set!** Your LLM Text Generator is now running in Docker containers with automated monitoring.
