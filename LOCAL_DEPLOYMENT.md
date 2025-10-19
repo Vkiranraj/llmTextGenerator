@@ -148,41 +148,6 @@ llmTextGenerator/
 - Copy or download the formatted content
 - Use for AI model training or analysis
 
-## Troubleshooting
-
-### Common Issues
-
-#### 1. Port Already in Use
-```bash
-# Check what's using port 80
-sudo lsof -i :80
-
-# Stop conflicting services or change port in .env
-NGINX_PORT=8080
-```
-
-#### 2. Docker Permission Issues
-```bash
-# Add your user to docker group (Linux)
-sudo usermod -aG docker $USER
-# Log out and back in
-```
-
-#### 3. OpenAI API Issues
-- Verify your API key is correct
-- Check if you have sufficient credits
-- Ensure the API key has proper permissions
-
-#### 4. Database Issues
-```bash
-# Reset database
-docker stop llm-text-generator
-docker rm llm-text-generator
-rm -rf backend/data/
-docker build -t llm-text-generator .
-docker run -d -p 80:80 --env-file .env --name llm-text-generator llm-text-generator
-```
-
 ### Logs and Debugging
 
 #### View Application Logs

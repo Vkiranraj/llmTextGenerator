@@ -1,12 +1,12 @@
 # LLM Text Generator
 
-A powerful web application that crawls websites and generates AI-enhanced, organized text content optimized for Large Language Models (LLMs).
+A web application that crawls websites and generates AI-enhanced, organized text content optimized for Large Language Models (LLMs).
 
 ## Features
 
 - **Web Crawling**: Automatically crawls websites up to configurable depth
 - **AI Enhancement**: Uses OpenAI for intelligent categorization and summaries
-- **LLM-Optimized Output**: Generates structured text content perfect for AI training
+- **LLM-Optimized Output**: Generates structured text content
 - **Web Interface**: Easy-to-use React frontend
 - **Background Monitoring**: Automated URL monitoring and updates
 - **Email Notifications**: Optional email alerts for monitoring updates
@@ -46,7 +46,7 @@ See `RAILWAY_DEPLOYMENT.md` for Railway deployment instructions.
 ## Architecture
 
 - **Backend**: FastAPI (Python) with SQLAlchemy
-- **Frontend**: React with modern UI
+- **Frontend**: React
 - **Database**: SQLite (local) or PostgreSQL (production)
 - **AI Integration**: OpenAI GPT models for content analysis
 - **Web Crawling**: Playwright for JavaScript-heavy sites
@@ -84,49 +84,3 @@ docker stop llm-text-generator
 - `GET /jobs/{id}` - Get job status and results
 - `GET /jobs/{id}/progress` - Get job progress
 - `POST /unsubscribe` - Unsubscribe from notifications
-
-## Troubleshooting
-
-### Common Issues
-1. **Port conflicts**: Change `NGINX_PORT` in `.env`
-2. **Docker issues**: Ensure Docker is running and you have permissions
-3. **OpenAI errors**: Verify API key and credits
-4. **Database issues**: Check database file permissions
-
-### Getting Help
-1. Check application logs: `docker logs llm-text-generator`
-2. Verify environment variables are set correctly
-3. Ensure the container is running: `docker ps`
-4. Check network connectivity
-
-## Contributing
-
-1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Test locally with Docker
-5. Submit a pull request
-
-## License
-
-This project is licensed under the MIT License.
-
-## Support
-
-For issues and questions:
-1. Check the documentation files
-2. Review the troubleshooting section
-3. Check application logs for errors
-4. Verify your configuration
-
-## Changelog
-
-### Version 1.0.0
-- Initial release
-- Web crawling with Playwright
-- OpenAI integration for AI enhancement
-- React frontend
-- Docker containerization
-- Railway deployment support
-- Email notifications
-- Background monitoring

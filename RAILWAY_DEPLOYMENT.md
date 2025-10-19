@@ -26,7 +26,7 @@ Railway will automatically detect your `Dockerfile`. You can configure:
 
 **Service Name**: `llm-text-generator` (or your preferred name)
 
-**Port**: `80` (Railway will ask for this)
+**Port**: `80` based on our docker file setting to obtain the domain link
 
 **Environment Variables** (set in Railway dashboard):
 ```
@@ -69,10 +69,6 @@ FROM_EMAIL=noreply@yourdomain.com
    - Start all services in one container (backend, frontend, nginx, monitor)
    - Provide you with a public URL
 
-### 6. Access Your Application
-After deployment, Railway will provide you with a public URL like:
-`https://your-app-name.railway.app`
-
 ## Environment Variables Setup
 
 ### Generate Secret Keys:
@@ -92,33 +88,3 @@ openssl rand -hex 32
 
 ## Database
 Railway automatically provides a PostgreSQL database. The application will use the `DATABASE_URL` environment variable.
-
-## Monitoring
-- Check logs: Available in Railway dashboard
-- Check status: Service health in dashboard
-- View metrics: Built-in monitoring
-
-## Troubleshooting
-- Check application logs for errors
-- Verify all environment variables are set
-- Ensure OpenAI API key is valid and has credits
-- Check database connection
-
-## Production Considerations
-- Set up proper email configuration for notifications
-- Monitor OpenAI API usage and costs
-- Set up monitoring and alerting
-- Consider rate limiting for public access
-
-## Pricing
-- **Free Tier**: 500 hours/month
-- **Pro Plan**: $5/month for always-on service
-- **Database**: Included in Pro plan
-
-## Advantages of Railway
-- ✅ Simple deployment process
-- ✅ Automatic database provisioning
-- ✅ Built-in monitoring
-- ✅ Easy environment variable management
-- ✅ Automatic HTTPS
-- ✅ Global CDN
