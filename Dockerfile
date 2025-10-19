@@ -59,10 +59,10 @@ RUN echo '#!/bin/bash' > /app/start.sh && \
     echo 'echo "MONITORING_INTERVAL_MINUTES: $MONITORING_INTERVAL_MINUTES"' >> /app/start.sh && \
     echo 'if [ "$DEMO_MODE" = "true" ]; then' >> /app/start.sh && \
     echo '    echo "Setting up demo mode cron (every 5 minutes)"' >> /app/start.sh && \
-    echo '    echo "*/5 * * * * cd /app && /usr/local/bin/python /app/scripts/monitor_urls.py >> /app/logs/monitor.log 2>&1" | crontab -' >> /app/start.sh && \
+    echo '    echo "*/5 * * * * cd /app && /usr/local/bin/python3 /app/scripts/monitor_urls.py >> /app/logs/monitor.log 2>&1" | crontab -' >> /app/start.sh && \
     echo 'else' >> /app/start.sh && \
     echo '    echo "Setting up production mode cron (daily at 2 AM)"' >> /app/start.sh && \
-    echo '    echo "0 2 * * * cd /app && /usr/local/bin/python /app/scripts/monitor_urls.py >> /app/logs/monitor.log 2>&1" | crontab -' >> /app/start.sh && \
+    echo '    echo "0 2 * * * cd /app && /usr/local/bin/python3 /app/scripts/monitor_urls.py >> /app/logs/monitor.log 2>&1" | crontab -' >> /app/start.sh && \
     echo 'fi' >> /app/start.sh && \
     echo 'echo "Cron jobs set up:"' >> /app/start.sh && \
     echo 'crontab -l' >> /app/start.sh && \
