@@ -54,10 +54,18 @@ EXPOSE 80
 
 # Start all services
 CMD sh -c " \
+    # Set up cron job based on DEMO_MODE \
+    if [ \"\$DEMO_MODE\" = \"true\" ]; then \
+        echo \"*/5 * * * * cd /app && python scripts/monitor_urls.py >> /app/logs/monitor.log 2>&1\" | crontab -; \
+        echo \"Demo mode: Monitoring every 5 minutes\"; \
+    else \
+        echo \"0 2 * * * cd /app && python scripts/monitor_urls.py >> /app/logs/monitor.log 2>&1\" | crontab -; \
+        echo \"Production mode: Monitoring daily at 2:00 AM\"; \
+    fi; \
+    # Start cron service \
+    service cron start & \
     # Start FastAPI backend in the background \
     uvicorn app.main:app --host 0.0.0.0 --port 8000 & \
-    # Start Playwright monitor in the background \
-    python3 scripts/monitor_urls.py & \
     # Start Nginx in the foreground \
     nginx -g 'daemon off;' \
 "

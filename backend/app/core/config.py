@@ -42,6 +42,10 @@ class Settings(BaseSettings):
     OPENAI_MODEL: str = "gpt-4o-mini"
     OPENAI_MAX_TOKENS: int = 500
     OPENAI_TEMPERATURE: float = 0.3
+    
+    # Demo configuration
+    DEMO_MODE: bool = False
+    MONITORING_INTERVAL_MINUTES: int = 1440  # Default to 24 hours (1440 minutes)
 
     class Config:
         case_sensitive = True

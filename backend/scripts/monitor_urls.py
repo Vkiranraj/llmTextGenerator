@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 """
 URL Monitoring Script
-Runs every 24 hours to check for content changes in monitored URLs.
+Runs on configurable intervals to check for content changes in monitored URLs.
+Uses MONITORING_INTERVAL_MINUTES environment variable for timing.
 """
 
 import sys
@@ -17,6 +18,7 @@ from app.database import SessionLocal
 from app import models
 from app.crawler import crawl_url_job
 from app.helper import get_text_hash
+from app.core.config import settings
 from sqlalchemy import and_
 
 # Configure logging
@@ -57,7 +59,11 @@ def should_monitor_url(job: models.URLJob) -> bool:
             last_crawled = last_crawled.replace(tzinfo=datetime.timezone.utc)
         
         time_since_last_crawl = now - last_crawled
-        if time_since_last_crawl.total_seconds() < 24 * 3600:  # 24 hours
+        
+        # Use dynamic interval based on configuration
+        interval_seconds = settings.MONITORING_INTERVAL_MINUTES * 60
+        
+        if time_since_last_crawl.total_seconds() < interval_seconds:
             return False
     
     return True
