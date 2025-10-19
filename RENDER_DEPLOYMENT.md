@@ -1,6 +1,6 @@
 # Render Deployment Guide for LLM Text Generator
 
-This guide will walk you through deploying your LLM Text Generator application to Render using Docker Compose.
+This guide will walk you through deploying your LLM Text Generator application to Render using a single Dockerfile.
 
 ## Prerequisites
 
@@ -19,10 +19,10 @@ This guide will walk you through deploying your LLM Text Generator application t
 1. In Render dashboard, click "New +"
 2. Select "Web Service"
 3. Connect your GitHub repository: `llmTextGenerator`
-4. Choose "Docker Compose" as the deployment method
+4. Choose "Docker" as the deployment method
 
 ### 3. Configure Service
-Render will automatically detect your `docker-compose.yml` file. You can configure:
+Render will automatically detect your `Dockerfile`. You can configure:
 
 **Service Name**: `llm-text-generator` (or your preferred name)
 
@@ -66,8 +66,8 @@ FROM_EMAIL=noreply@yourdomain.com
 ### 5. Deploy
 1. Click "Create Web Service"
 2. Render will automatically:
-   - Build all Docker images
-   - Start all services (backend, frontend, nginx, monitor)
+   - Build your Dockerfile
+   - Start all services in one container (backend, frontend, nginx, monitor)
    - Provide you with a public URL
 
 ### 6. Access Your Application
@@ -76,11 +76,11 @@ After deployment, Render will provide you with a public URL like:
 
 ## Service Configuration
 
-Render will deploy all 4 services from your `docker-compose.yml`:
+Render will deploy your application using the single Dockerfile approach:
 
-1. **Backend** - FastAPI application
-2. **Frontend** - React application  
-3. **Nginx** - Reverse proxy
+1. **Backend** - FastAPI application (port 8000)
+2. **Frontend** - React static files served by Nginx
+3. **Nginx** - Reverse proxy (port 80)
 4. **Monitor** - Background monitoring service
 
 ## Environment Variables Setup

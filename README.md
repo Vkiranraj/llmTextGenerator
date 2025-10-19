@@ -22,7 +22,7 @@ See `RENDER_DEPLOYMENT.md` for Render deployment instructions.
 ## Documentation
 
 - **Local Deployment**: `LOCAL_DEPLOYMENT.md` - Complete guide for local development
-- **Render Deployment**: `RENDER_DEPLOYMENT.md` - Production deployment on Render
+- **DigitalOcean Deployment**: `DIGITALOCEAN_DEPLOYMENT.md` - Production deployment on DigitalOcean App Platform
 
 ## Configuration
 
