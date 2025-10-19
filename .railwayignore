@@ -1,15 +1,13 @@
 # Railway ignore file
 node_modules/
-llmTextGenerator/
 *.txt
 .git/
 .gitignore
 README.md
 DOCKER_README.md
-docker-compose.yml
-nginx.conf.template
-regenerate_*.py
-REGENERATE_README.md
+LOCAL_DEPLOYMENT.md
+RAILWAY_DEPLOYMENT.md
+deploy-railway.sh
 backend/logs/
 backend/data/
 *.log
