@@ -128,9 +128,10 @@ docker-compose logs -f monitor
 - **Type**: SQLite database
 - **Persistence**: Survives container restarts
 
-### Generated Files
-- **Location**: `./backend/llms_*.txt`
-- **Content**: Generated LLM text files
+### Generated Content
+- **Storage**: Database (`llm_text_content` column)
+- **Content**: Generated LLM text content
+- **Access**: Via API endpoint `/jobs/{job_id}/download`
 - **Persistence**: Survives container restarts
 
 ### Logs

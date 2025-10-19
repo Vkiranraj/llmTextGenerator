@@ -500,10 +500,7 @@ def crawl_url_job(url_job_id: int) -> None:
                 job.llm_text_content = llm_text
                 job.content_hash = helper.get_text_hash(llm_text)
                 
-                filename = f"llms_{job.id}.txt"
-                with open(filename, "w", encoding="utf-8") as f:
-                    f.write(llm_text)
-                logger.info(f"llms.txt written to {filename} ({len(final_pages)} pages)")
+                logger.info(f"LLM text generated and stored in database ({len(final_pages)} pages)")
             else:
                 logger.info(f"No page changes detected for {job.url}, skipping llms.txt regeneration")
             
