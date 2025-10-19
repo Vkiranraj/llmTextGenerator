@@ -7,15 +7,27 @@ from email.mime.text import MimeText
 from email.mime.multipart import MimeMultipart
 from cryptography.fernet import Fernet
 from .core.config import settings
+from .database import SessionLocal
+from . import crud
 
 logger = logging.getLogger(__name__)
+
+def _get_encryption_key() -> bytes:
+    """
+    Get the encryption key for token encryption/decryption.
+    Uses ENCRYPTION_KEY if set, otherwise falls back to SECRET_KEY.
+    """
+    encryption_key = settings.ENCRYPTION_KEY or settings.SECRET_KEY
+    # Ensure key is exactly 32 bytes for Fernet
+    key_bytes = encryption_key.encode()[:32].ljust(32, b'0')
+    return key_bytes
 
 def encrypt_subscription_id(subscription_id: int) -> str:
     """
     Encrypt a subscription ID to create a secure unsubscribe token.
     """
-    key = settings.SECRET_KEY.encode()[:32].ljust(32, b'0')  # Pad to 32 bytes
-    f = Fernet(Fernet.generate_key())  # In production, use a proper key
+    key = _get_encryption_key()
+    f = Fernet(key)
     token = f.encrypt(str(subscription_id).encode())
     return token.decode()
 
@@ -24,8 +36,8 @@ def decrypt_subscription_id(token: str) -> int:
     Decrypt an unsubscribe token to get the subscription ID.
     """
     try:
-        key = settings.SECRET_KEY.encode()[:32].ljust(32, b'0')
-        f = Fernet(Fernet.generate_key())  # In production, use the same key
+        key = _get_encryption_key()
+        f = Fernet(key)
         subscription_id = f.decrypt(token.encode())
         return int(subscription_id.decode())
     except Exception as e:
@@ -43,7 +55,7 @@ def send_email_notification(to_email: str, url: str, llm_text: str, subscription
     try:
         # Create unsubscribe token
         unsubscribe_token = encrypt_subscription_id(subscription_id)
-        unsubscribe_url = f"http://localhost:8000/unsubscribe?token={unsubscribe_token}"
+        unsubscribe_url = f"{settings.BASE_URL}/unsubscribe?token={unsubscribe_token}"
         
         # Create email content
         subject = f"Content Update: {url}"
@@ -92,9 +104,6 @@ def send_bulk_notifications(job_id: int, llm_text: str, url: str):
     """
     Send notifications to all active subscribers for a job.
     """
-    from .database import SessionLocal
-    from . import crud
-    
     db = SessionLocal()
     try:
         subscriptions = crud.get_active_subscriptions_for_job(db, job_id)

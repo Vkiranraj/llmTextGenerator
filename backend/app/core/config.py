@@ -1,26 +1,31 @@
 from pydantic import BaseSettings
+import os
 
 class Settings(BaseSettings):
     """
     Manages application-wide settings.
-    It can read variables from the environment (very useful for Docker).
+    Reads variables from environment variables and .env file.
+    Railway dashboard values will override .env file values.
     """
-    PROJECT_NAME = "URL Monitoring Service"
-    API_VERSION = "1.0.0"
-    MAX_PAGES = 20  # Changed from 5 to 20
-    MAX_DEPTH = 1
-    MAX_CONTENT_PARAGRAPHS = 10
-    REQUESTS_TIMEOUT = 10
-    PLAYWRIGHT_TIMEOUT = 60000
-    CRAWL_DELAY = 2  # Delay in seconds between page fetches for politeness
-    GRACE_PERIOD_CRAWLS = 2  # Number of crawls before deleting unseen pages
-    USER_AGENT = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
-
+    # Application metadata
+    PROJECT_NAME: str = "URL Monitoring Service"
+    API_VERSION: str = "1.0.0"
+    
+    # Base URL for the application (used for unsubscribe links, etc.)
+    BASE_URL: str = "http://localhost:8000"
+    
+    # Crawling configuration
+    MAX_PAGES: int = 20
+    MAX_DEPTH: int = 1
+    MAX_CONTENT_PARAGRAPHS: int = 10
+    REQUESTS_TIMEOUT: int = 10
+    PLAYWRIGHT_TIMEOUT: int = 60000
+    CRAWL_DELAY: int = 2  # Delay in seconds between page fetches for politeness
+    GRACE_PERIOD_CRAWLS: int = 2  # Number of crawls before deleting unseen pages
+    USER_AGENT: str = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
 
     # Database configuration
-    # The default value is for SQLite, but you could override this with an
-    # environment variable for production (e.g., a PostgreSQL URL).
-    DATABASE_URL = "sqlite:///./url_monitor.db"
+    DATABASE_URL: str = "sqlite:///./url_monitor.db"
     
     # Email configuration
     SMTP_HOST: str = "smtp.gmail.com"
@@ -28,12 +33,14 @@ class Settings(BaseSettings):
     SMTP_USER: str = ""
     SMTP_PASSWORD: str = ""
     FROM_EMAIL: str = "noreply@example.com"
-    SECRET_KEY: str = "your-secret-key-change-in-production"  # For token encryption
+    
+    # Security configuration
+    SECRET_KEY: str = "your-secret-key-change-in-production"
+    ENCRYPTION_KEY: str = ""  # For email token encryption (will use SECRET_KEY if not set)
 
     class Config:
-        # This tells Pydantic to look for a .env file if you want to use one.
-        # For now, it will just use the default values above.
         case_sensitive = True
+        env_file = ".env"
 
 # Create a single, importable instance of the settings
 settings = Settings()

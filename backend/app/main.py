@@ -21,7 +21,10 @@ models.Base.metadata.create_all(bind=engine)
 app = FastAPI(
     title=settings.PROJECT_NAME,
     description="An API to submit URLs for monitoring and content extraction.",
-    version=settings.API_VERSION)
+    version=settings.API_VERSION,
+    docs_url=None,
+    redoc_url=None,
+    openapi_url=None)
 
 # Create a thread pool executor for background tasks
 executor = ThreadPoolExecutor(max_workers=5)

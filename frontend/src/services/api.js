@@ -1,6 +1,7 @@
 import axios from 'axios';
 
-const API_BASE = ''; // Use relative URLs since nginx will proxy
+// Get API base URL from environment variable, fallback to relative URLs for nginx proxy
+const API_BASE = process.env.REACT_APP_API_BASE_URL || '';
 
 const api = axios.create({
   baseURL: API_BASE,

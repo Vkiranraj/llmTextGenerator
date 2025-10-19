@@ -48,7 +48,15 @@ def should_monitor_url(job: models.URLJob) -> bool:
     
     # Skip if last crawled was less than 24 hours ago
     if job.last_crawled:
-        time_since_last_crawl = datetime.datetime.now(datetime.timezone.utc) - job.last_crawled
+        # Handle timezone-aware datetime comparison
+        now = datetime.datetime.now(datetime.timezone.utc)
+        last_crawled = job.last_crawled
+        
+        # If last_crawled is naive, assume it's UTC
+        if last_crawled.tzinfo is None:
+            last_crawled = last_crawled.replace(tzinfo=datetime.timezone.utc)
+        
+        time_since_last_crawl = now - last_crawled
         if time_since_last_crawl.total_seconds() < 24 * 3600:  # 24 hours
             return False
     

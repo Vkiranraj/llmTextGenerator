@@ -1,18 +1,64 @@
+"""
+Web crawler implementation for intelligent content extraction and monitoring.
+
+This module implements a sophisticated web crawler system designed for content monitoring
+and LLM text generation. The crawler features:
+
+Key Components:
+1. WebCrawler Class:
+   - Context manager for resource management (browser, session cleanup)
+   - Dual crawling strategy: requests library with Playwright fallback
+   - Robots.txt compliance checking
+   - HTTP caching support (ETag/Last-Modified headers)
+   - Content validation (HTML type, size limits)
+
+2. Smart Crawling Algorithm:
+   - Breadth-first traversal with configurable depth limits
+   - Page-level change detection using HTTP caching headers
+   - Content deduplication and normalization
+   - Intelligent content extraction (prioritizes main content containers)
+   - Same-domain link discovery and filtering
+
+3. Content Processing:
+   - BeautifulSoup-based HTML parsing
+   - Smart content extraction (articles, main containers)
+   - Metadata extraction (title, description)
+   - Content scoring based on crawl depth
+   - Link normalization and filtering
+
+4. Database Integration:
+   - SQLAlchemy ORM for persistent storage
+   - Page lifecycle management (grace period for stale pages)
+   - Progress tracking and status updates
+   - Conditional LLM text regeneration
+
+5. Performance Optimizations:
+   - HTTP HEAD requests for change detection
+   - Cached link processing for unchanged pages
+   - Configurable politeness delays
+   - Memory-efficient page pruning by score
+   - Graceful error handling and fallbacks
+
+The crawler is designed to be respectful of target websites while efficiently
+extracting and monitoring content changes for downstream LLM processing.
+
+"""
 import logging
 import traceback
 import time
 import json
+import requests
+import datetime
+
 from collections import deque
 from typing import Dict, Set, Optional
 from urllib.parse import urljoin, urlparse
 from urllib import robotparser
-import requests
 from playwright.sync_api import sync_playwright, Browser
 from bs4 import BeautifulSoup
 from sqlalchemy.orm import Session
-import datetime
 
-from .helper import generate_llms_txt, get_text_hash, is_excluded_url, is_valid_url, normalize_url, calculate_page_score
+from . import helper
 from .core.config import settings
 from .database import SessionLocal
 from .models import URLJob, CrawledPage
@@ -99,7 +145,7 @@ class WebCrawler:
                         'reason': f'Not HTML content: {content_type}'
                     }
                 
-                # Check content length
+                # Check content length, if it is more than 10MB, return false
                 content_length = response.headers.get('content-length')
                 if content_length:
                     try:
@@ -142,7 +188,7 @@ class WebCrawler:
         Fetch page content with requests first, fallback to Playwright.
         Returns dict with url, title, html, etag, and last_modified.
         """
-        if not is_valid_url(url):
+        if not helper.is_valid_url(url):
             raise ValueError(f"Invalid URL: {url}")
             
         if not self.robot_parser.can_fetch(settings.USER_AGENT, url):
@@ -228,7 +274,7 @@ class WebCrawler:
         links = set()
         for link in soup.find_all("a", href=True):
             href = urljoin(base_url, link["href"])
-            if not is_excluded_url(href) and urlparse(href).netloc == base_domain:
+            if not helper.is_excluded_url(href) and urlparse(href).netloc == base_domain:
                 links.add(href)
         
         return {
@@ -263,13 +309,13 @@ def crawl_url_job(url_job_id: int) -> None:
     
     # Load existing pages into dict for fast lookup
     existing_pages: Dict[str, CrawledPage] = {
-        normalize_url(p.url): p 
+        helper.normalize_url(p.url): p 
         for p in session.query(CrawledPage).filter_by(url_job_id=job.id).all()
     }
     
     seen_in_this_crawl: Set[str] = set()
     visited: Set[str] = set()
-    normalized_root_url = normalize_url(job.url)
+    normalized_root_url = helper.normalize_url(job.url)
     queue = deque([(normalized_root_url, 0)])
     
     pages_fetched = 0  # Counter for MAX_PAGES limit
@@ -280,7 +326,7 @@ def crawl_url_job(url_job_id: int) -> None:
             
             while queue and pages_fetched < settings.MAX_PAGES:
                 current_url, depth = queue.popleft()
-                normalized_url = normalize_url(current_url)
+                normalized_url = helper.normalize_url(current_url)
                 
                 if normalized_url in visited or depth > settings.MAX_DEPTH:
                     continue
@@ -308,13 +354,13 @@ def crawl_url_job(url_job_id: int) -> None:
                             try:
                                 cached_links = json.loads(page_record.links) if page_record.links else []
                                 for link in cached_links:
-                                    norm_link = normalize_url(link)
+                                    norm_link = helper.normalize_url(link)
                                     if norm_link not in visited:
                                         queue.append((norm_link, depth + 1))
                             except json.JSONDecodeError:
                                 logger.warning(f"Failed to parse cached links for {normalized_url}")
                         
-                        continue  # Skip fetching
+                        continue 
                     
                     elif not head_check['is_valid']:
                         logger.warning(f"Skipping {normalized_url}: {head_check['reason']}")
@@ -333,8 +379,8 @@ def crawl_url_job(url_job_id: int) -> None:
                     parsed_data = crawler.parse_page_content(normalized_url, page_data["html"])
                     
                     # Calculate content hash and score
-                    new_hash = get_text_hash(parsed_data["content"])
-                    new_score = calculate_page_score(depth)
+                    new_hash = helper.get_text_hash(parsed_data["content"])
+                    new_score = helper.calculate_page_score(depth)
                     
                     if page_record:
                         # Update existing page
@@ -376,7 +422,7 @@ def crawl_url_job(url_job_id: int) -> None:
                     # Add links to queue
                     if depth < settings.MAX_DEPTH:
                         for link in parsed_data.get("links", []):
-                            norm_link = normalize_url(link)
+                            norm_link = helper.normalize_url(link)
                             if norm_link not in visited:
                                 queue.append((norm_link, depth + 1))
                     
@@ -450,9 +496,9 @@ def crawl_url_job(url_job_id: int) -> None:
             # Only regenerate llms.txt if pages changed or this is the first crawl
             if pages_changed or not job.llm_text_content:
                 logger.info(f"Pages changed for {job.url}, regenerating llms.txt")
-                llm_text = generate_llms_txt(final_pages, job.url)
+                llm_text = helper.generate_llms_txt(final_pages, job.url)
                 job.llm_text_content = llm_text
-                job.content_hash = get_text_hash(llm_text)
+                job.content_hash = helper.get_text_hash(llm_text)
                 
                 filename = f"llms_{job.id}.txt"
                 with open(filename, "w", encoding="utf-8") as f:

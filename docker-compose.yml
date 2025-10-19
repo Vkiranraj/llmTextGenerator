@@ -5,13 +5,15 @@ services:
     image: nginx:alpine
     container_name: llm-text-generator-nginx
     ports:
-      - "80:80"
+      - "${NGINX_PORT:-80}:80"
     volumes:
       - ./nginx.conf:/etc/nginx/nginx.conf:ro
     depends_on:
       - backend
       - frontend
     restart: unless-stopped
+    environment:
+      - DOMAIN_NAME=${DOMAIN_NAME:-localhost}
     healthcheck:
       test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost/"]
       interval: 30s
@@ -24,15 +26,27 @@ services:
       context: ./backend
       dockerfile: Dockerfile
     container_name: llm-text-generator-backend
-    # Remove direct port exposure since nginx will proxy
-    # ports:
-    #   - "8000:8000"
     volumes:
       - ./backend/data:/app/data
       - ./backend/logs:/app/logs
       - ./backend/llms_*.txt:/app/llms_*.txt
     environment:
-      - DATABASE_URL=sqlite:///./data/url_monitor.db
+      - DATABASE_URL=${DATABASE_URL:-sqlite:///./data/url_monitor.db}
+      - BASE_URL=${BASE_URL:-http://localhost:8000}
+      - SECRET_KEY=${SECRET_KEY:-your-secret-key-change-in-production}
+      - ENCRYPTION_KEY=${ENCRYPTION_KEY:-}
+      - SMTP_HOST=${SMTP_HOST:-smtp.gmail.com}
+      - SMTP_PORT=${SMTP_PORT:-587}
+      - SMTP_USER=${SMTP_USER:-}
+      - SMTP_PASSWORD=${SMTP_PASSWORD:-}
+      - FROM_EMAIL=${FROM_EMAIL:-noreply@example.com}
+      - MAX_PAGES=${MAX_PAGES:-20}
+      - MAX_DEPTH=${MAX_DEPTH:-1}
+      - MAX_CONTENT_PARAGRAPHS=${MAX_CONTENT_PARAGRAPHS:-10}
+      - REQUESTS_TIMEOUT=${REQUESTS_TIMEOUT:-10}
+      - PLAYWRIGHT_TIMEOUT=${PLAYWRIGHT_TIMEOUT:-60000}
+      - CRAWL_DELAY=${CRAWL_DELAY:-2}
+      - GRACE_PERIOD_CRAWLS=${GRACE_PERIOD_CRAWLS:-2}
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/"]
@@ -46,12 +60,11 @@ services:
       context: ./frontend
       dockerfile: Dockerfile
     container_name: llm-text-generator-frontend
-    # Remove direct port exposure since nginx will proxy
-    # ports:
-    #   - "3000:3000"
     depends_on:
       - backend
     restart: unless-stopped
+    environment:
+      - REACT_APP_API_BASE_URL=${REACT_APP_API_BASE_URL:-}
     healthcheck:
       test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3000"]
       interval: 30s
@@ -70,7 +83,22 @@ services:
       - ./backend/logs:/app/logs
       - ./backend/llms_*.txt:/app/llms_*.txt
     environment:
-      - DATABASE_URL=sqlite:///./data/url_monitor.db
+      - DATABASE_URL=${DATABASE_URL:-sqlite:///./data/url_monitor.db}
+      - BASE_URL=${BASE_URL:-http://localhost:8000}
+      - SECRET_KEY=${SECRET_KEY:-your-secret-key-change-in-production}
+      - ENCRYPTION_KEY=${ENCRYPTION_KEY:-}
+      - SMTP_HOST=${SMTP_HOST:-smtp.gmail.com}
+      - SMTP_PORT=${SMTP_PORT:-587}
+      - SMTP_USER=${SMTP_USER:-}
+      - SMTP_PASSWORD=${SMTP_PASSWORD:-}
+      - FROM_EMAIL=${FROM_EMAIL:-noreply@example.com}
+      - MAX_PAGES=${MAX_PAGES:-20}
+      - MAX_DEPTH=${MAX_DEPTH:-1}
+      - MAX_CONTENT_PARAGRAPHS=${MAX_CONTENT_PARAGRAPHS:-10}
+      - REQUESTS_TIMEOUT=${REQUESTS_TIMEOUT:-10}
+      - PLAYWRIGHT_TIMEOUT=${PLAYWRIGHT_TIMEOUT:-60000}
+      - CRAWL_DELAY=${CRAWL_DELAY:-2}
+      - GRACE_PERIOD_CRAWLS=${GRACE_PERIOD_CRAWLS:-2}
     depends_on:
       - backend
     restart: unless-stopped

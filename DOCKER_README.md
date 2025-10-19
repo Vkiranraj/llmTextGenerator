@@ -1,35 +1,40 @@
-# 🐳 LLM Text Generator - Docker Deployment
+# LLM Text Generator - Docker Deployment
 
 This guide will help you deploy the LLM Text Generator application using Docker containers.
 
-## 📋 Prerequisites
+## Prerequisites
 
 - Docker (version 20.10 or higher)
 - Docker Compose (version 2.0 or higher)
 - At least 2GB of available RAM
 - At least 5GB of available disk space
 
-## 🚀 Quick Start
+## Quick Start
 
-### 1. Clone and Deploy
+### 1. Clone and Setup
 
 ```bash
 # Clone the repository
 git clone <your-repo-url>
 cd llmTextGenerator
 
-# Make scripts executable
-chmod +x docker-deploy.sh docker-stop.sh docker-logs.sh
-
-# Deploy the application
-./docker-deploy.sh
+# Set up environment variables
+cp env.example .env
+# Edit .env with your settings
 ```
 
-### 2. Access the Application
+### 2. Deploy
 
-- **Frontend**: http://localhost:3000
-- **Backend API**: http://localhost:8000
-- **API Documentation**: http://localhost:8000/docs
+```bash
+# Deploy the application
+docker-compose up -d
+```
+
+### 3. Access the Application
+
+- **Main App**: http://localhost
+- **API Docs**: http://localhost/api/docs
+- **Backend API**: http://localhost/api/
 
 ## 🏗️ Architecture
 
@@ -158,14 +163,57 @@ docker-compose exec monitor bash
 ## 🔧 Configuration
 
 ### Environment Variables
+
+The application is fully parameterized using environment variables. Copy `env.example` to `.env` and configure:
+
+```bash
+cp env.example .env
+# Edit .env with your settings
+```
+
+#### Required Variables
+- `BASE_URL`: Application base URL (e.g., `http://localhost:8000` or `https://your-domain.com`)
 - `DATABASE_URL`: Database connection string
-- `MAX_PAGES`: Maximum pages to crawl per URL
-- `MAX_DEPTH`: Maximum crawl depth
-- `MAX_CONTENT_PARAGRAPHS`: Maximum content paragraphs to extract
+- `SECRET_KEY`: Application secret key (generate with: `python -c "import secrets; print(secrets.token_urlsafe(32))"`)
+
+#### Email Configuration
+- `SMTP_HOST`: SMTP server hostname
+- `SMTP_PORT`: SMTP server port
+- `SMTP_USER`: SMTP username
+- `SMTP_PASSWORD`: SMTP password
+- `FROM_EMAIL`: Sender email address
+
+#### Optional Variables (with defaults)
+- `MAX_PAGES`: Maximum pages to crawl (default: 20)
+- `MAX_DEPTH`: Maximum crawl depth (default: 1)
+- `MAX_CONTENT_PARAGRAPHS`: Max content paragraphs (default: 10)
+- `REQUESTS_TIMEOUT`: Request timeout in seconds (default: 10)
+- `PLAYWRIGHT_TIMEOUT`: Playwright timeout in ms (default: 60000)
+- `CRAWL_DELAY`: Delay between page fetches (default: 2)
+- `GRACE_PERIOD_CRAWLS`: Crawls before deleting pages (default: 2)
+
+#### Frontend Variables
+- `REACT_APP_API_BASE_URL`: API base URL for frontend (leave empty for nginx proxy)
+
+#### Docker Variables
+- `NGINX_PORT`: Nginx port (default: 80)
+- `DOMAIN_NAME`: Domain name for nginx (default: localhost)
+
+### Railway Deployment
+
+For Railway deployment, set these variables in your Railway dashboard:
+
+**Required:**
+- `BASE_URL`: Your Railway app URL
+- `SECRET_KEY`: Generate a secure random string
+- `SMTP_HOST`, `SMTP_USER`, `SMTP_PASSWORD`, `FROM_EMAIL`
+
+**Optional:** All other variables will use defaults if not set.
 
 ### Port Configuration
-- **Frontend**: 3000 (configurable in docker-compose.yml)
-- **Backend**: 8000 (configurable in docker-compose.yml)
+- **Frontend**: 3000 (internal)
+- **Backend**: 8000 (internal)
+- **Nginx**: 80 (external, configurable via `NGINX_PORT`)
 
 ## 🚨 Troubleshooting
 
