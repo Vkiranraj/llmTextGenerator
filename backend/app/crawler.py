@@ -373,7 +373,7 @@ def crawl_url_job(url_job_id: int) -> None:
                     
                     # Update progress
                     job.progress_percentage = min(5 + int((pages_fetched / settings.MAX_PAGES) * 80), 85)
-                    job.progress_message = f"Crawling page {pages_fetched+1}/{settings.MAX_PAGES}..."
+                    job.progress_message = "Crawling website..."
                     session.commit()
                     
                     page_data = crawler.fetch_page_content(normalized_url)
