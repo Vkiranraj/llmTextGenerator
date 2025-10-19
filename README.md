@@ -17,12 +17,12 @@ A powerful web application that crawls websites and generates AI-enhanced, organ
 See `LOCAL_DEPLOYMENT.md` for complete local setup instructions.
 
 ### Production Deployment
-See `RENDER_DEPLOYMENT.md` for Render deployment instructions.
+See `RAILWAY_DEPLOYMENT.md` for Railway deployment instructions.
 
 ## Documentation
 
 - **Local Deployment**: `LOCAL_DEPLOYMENT.md` - Complete guide for local development
-- **DigitalOcean Deployment**: `DIGITALOCEAN_DEPLOYMENT.md` - Production deployment on DigitalOcean App Platform
+- **Railway Deployment**: `RAILWAY_DEPLOYMENT.md` - Production deployment on Railway
 
 ## Configuration
 

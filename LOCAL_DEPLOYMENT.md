@@ -4,7 +4,7 @@ This guide will help you deploy the LLM Text Generator application locally using
 
 ## Prerequisites
 
-- Docker and Docker Compose installed
+- Docker installed
 - Git (to clone the repository)
 - OpenAI API key (optional, for AI-enhanced features)
 
@@ -73,7 +73,9 @@ openssl rand -hex 32
 
 ### 5. Start the Application
 ```bash
-docker-compose up -d
+# Build and run the Docker container
+docker build -t llm-text-generator .
+docker run -d -p 80:80 --env-file .env --name llm-text-generator llm-text-generator
 ```
 
 ### 6. Access the Application
@@ -103,12 +105,14 @@ Open your browser and go to: `http://localhost`
 
 ### Docker Services
 
-The application consists of 4 Docker services:
+The application runs in a single Docker container with 4 services:
 
-1. **Backend** - FastAPI application with Python
-2. **Frontend** - React application
+1. **Backend** - FastAPI application with Python (port 8000)
+2. **Frontend** - React static files served by Nginx
 3. **Monitor** - Background monitoring service
-4. **Nginx** - Reverse proxy and static file server
+4. **Nginx** - Reverse proxy and static file server (port 80)
+
+**Note**: Both local and Railway deployment use the same single container approach for consistency.
 
 ### Database
 
