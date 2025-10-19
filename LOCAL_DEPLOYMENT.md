@@ -112,8 +112,6 @@ The application runs in a single Docker container with 4 services:
 3. **Monitor** - Background monitoring service
 4. **Nginx** - Reverse proxy and static file server (port 80)
 
-**Note**: Both local and Railway deployment use the same single container approach for consistency.
-
 ### Database
 
 The application uses SQLite by default for local development. The database file is stored in `./backend/data/url_monitor.db`.
@@ -178,37 +176,34 @@ sudo usermod -aG docker $USER
 #### 4. Database Issues
 ```bash
 # Reset database
-docker-compose down
+docker stop llm-text-generator
+docker rm llm-text-generator
 rm -rf backend/data/
-docker-compose up -d
+docker build -t llm-text-generator .
+docker run -d -p 80:80 --env-file .env --name llm-text-generator llm-text-generator
 ```
 
 ### Logs and Debugging
 
 #### View Application Logs
 ```bash
-# All services
-docker-compose logs
+# View container logs
+docker logs llm-text-generator
 
-# Specific service
-docker-compose logs backend
-docker-compose logs frontend
-docker-compose logs nginx
-docker-compose logs monitor
+# Follow logs in real-time
+docker logs -f llm-text-generator
 ```
 
-#### Check Service Status
+#### Check Container Status
 ```bash
-docker-compose ps
+docker ps
 ```
 
-#### Restart Services
+#### Restart Container
 ```bash
-# Restart all services
-docker-compose restart
-
-# Restart specific service
-docker-compose restart backend
+# Stop and restart the container
+docker stop llm-text-generator
+docker start llm-text-generator
 ```
 
 ## Development
@@ -217,19 +212,21 @@ docker-compose restart backend
 
 1. **Backend Changes**: Edit files in `backend/app/`
 2. **Frontend Changes**: Edit files in `frontend/src/`
-3. **Configuration Changes**: Edit `docker-compose.yml` or `nginx.conf`
+3. **Configuration Changes**: Edit `Dockerfile` or `nginx.conf`
 
 ### Rebuilding After Changes
 ```bash
 # Rebuild and restart
-docker-compose build
-docker-compose up -d
+docker build -t llm-text-generator .
+docker stop llm-text-generator
+docker rm llm-text-generator
+docker run -d -p 80:80 --env-file .env --name llm-text-generator llm-text-generator
 ```
 
 ### Database Management
 ```bash
 # Access database directly
-docker-compose exec backend python -c "
+docker exec -it llm-text-generator python -c "
 from app.database import get_db
 from app.models import URLJob
 db = next(get_db())
@@ -238,61 +235,5 @@ print(f'Total jobs: {len(jobs)}')
 "
 ```
 
-## Production Considerations
+#
 
-### Security
-- Change default SECRET_KEY
-- Use strong passwords
-- Configure proper email settings
-- Set up SSL/TLS certificates
-
-### Performance
-- Adjust MAX_PAGES based on your needs
-- Configure proper timeout values
-- Monitor resource usage
-- Set up log rotation
-
-### Monitoring
-- Set up log monitoring
-- Configure health checks
-- Monitor disk space
-- Set up backup procedures
-
-## Support
-
-### Getting Help
-1. Check the logs for error messages
-2. Verify all environment variables are set
-3. Ensure Docker is running properly
-4. Check network connectivity
-
-### Common Commands
-```bash
-# Start services
-docker-compose up -d
-
-# Stop services
-docker-compose down
-
-# View logs
-docker-compose logs -f
-
-# Rebuild services
-docker-compose build --no-cache
-
-# Clean up
-docker-compose down -v
-docker system prune -f
-```
-
-## Next Steps
-
-Once you have the application running locally:
-
-1. **Test the functionality** with a simple website
-2. **Configure OpenAI** for enhanced AI features
-3. **Set up email notifications** if needed
-4. **Customize the configuration** for your use case
-5. **Deploy to production** using Railway or another platform
-
-For production deployment, see `RAILWAY_DEPLOYMENT.md`.

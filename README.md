@@ -55,26 +55,27 @@ See `RAILWAY_DEPLOYMENT.md` for Railway deployment instructions.
 ## Development
 
 ### Prerequisites
-- Docker and Docker Compose
+- Docker
 - Node.js (for frontend development)
 - Python 3.9+ (for backend development)
 
 ### Local Development Setup
 ```bash
-# Start all services
-docker-compose up -d
+# Build and run the application
+docker build -t llm-text-generator .
+docker run -d -p 80:80 --env-file .env --name llm-text-generator llm-text-generator
 
 # View logs
-docker-compose logs -f
+docker logs -f llm-text-generator
 
-# Stop services
-docker-compose down
+# Stop the application
+docker stop llm-text-generator
 ```
 
 ### Making Changes
 - **Backend**: Edit files in `backend/app/`
 - **Frontend**: Edit files in `frontend/src/`
-- **Configuration**: Update `docker-compose.yml` or environment variables
+- **Configuration**: Update `Dockerfile` or environment variables
 
 ## API Endpoints
 
@@ -93,9 +94,9 @@ docker-compose down
 4. **Database issues**: Check database file permissions
 
 ### Getting Help
-1. Check application logs: `docker-compose logs`
+1. Check application logs: `docker logs llm-text-generator`
 2. Verify environment variables are set correctly
-3. Ensure all services are running: `docker-compose ps`
+3. Ensure the container is running: `docker ps`
 4. Check network connectivity
 
 ## Contributing
