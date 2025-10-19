@@ -16,12 +16,14 @@ A powerful web application that crawls websites and generates AI-enhanced, organ
 ### Local Development
 See `LOCAL_DEPLOYMENT.md` for complete local setup instructions.
 
-### Production Deployment (Railway)
-See `RAILWAY_DEPLOYMENT.md` for Railway deployment instructions.
+### Production Deployment
+- **Render** (Recommended): See `RENDER_DEPLOYMENT.md` for Render deployment instructions.
+- **Railway**: See `RAILWAY_DEPLOYMENT.md` for Railway deployment instructions.
 
 ## Documentation
 
 - **Local Deployment**: `LOCAL_DEPLOYMENT.md` - Complete guide for local development
+- **Render Deployment**: `RENDER_DEPLOYMENT.md` - Production deployment on Render (Recommended)
 - **Railway Deployment**: `RAILWAY_DEPLOYMENT.md` - Production deployment on Railway
 
 ## Configuration
