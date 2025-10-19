@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const API_BASE = 'http://localhost:8000';
+const API_BASE = ''; // Use relative URLs since nginx will proxy
 
 const api = axios.create({
   baseURL: API_BASE,
@@ -17,14 +17,20 @@ export const jobService = {
   },
 
   // Create a new job
-  createJob: async (url) => {
-    const response = await api.post('/jobs/', { url });
+  createJob: async (url, email = null) => {
+    const response = await api.post('/jobs/', { url, email });
     return response.data;
   },
 
   // Get a specific job
   getJob: async (jobId) => {
     const response = await api.get(`/jobs/${jobId}`);
+    return response.data;
+  },
+
+  // Get job progress
+  getJobProgress: async (jobId) => {
+    const response = await api.get(`/jobs/${jobId}/progress`);
     return response.data;
   },
 

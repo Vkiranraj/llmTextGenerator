@@ -1,26 +1,38 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { jobService } from './services/api';
 import UrlForm from './components/UrlForm';
-import JobsTable from './components/JobsTable';
+import ProgressView from './components/ProgressView';
+import ResultsView from './components/ResultsView';
 import Alert from './components/Alert';
 
 const App = () => {
-  const [jobs, setJobs] = useState([]);
+  const [currentJob, setCurrentJob] = useState(null);
   const [loading, setLoading] = useState(false);
   const [alert, setAlert] = useState(null);
   const [pollingInterval, setPollingInterval] = useState(null);
+  const [appState, setAppState] = useState('idle'); // 'idle', 'processing', 'completed', 'error'
+  const [formKey, setFormKey] = useState(Date.now()); // Unique key for form reset
 
-  // Load jobs from API
-  const loadJobs = useCallback(async () => {
-    setLoading(true);
+  // Load job progress from API
+  const loadJobProgress = useCallback(async (jobId) => {
     try {
-      const jobsData = await jobService.getJobs();
-      setJobs(jobsData);
+      const progressData = await jobService.getJobProgress(jobId);
+      setCurrentJob(prev => ({ ...prev, ...progressData }));
+      
+      // Update app state based on job status
+      if (progressData.status === 'completed') {
+        setAppState('completed');
+        stopPolling();
+        // Load full job data to get llm_text_content
+        const fullJob = await jobService.getJob(jobId);
+        setCurrentJob(fullJob);
+      } else if (progressData.status === 'error') {
+        setAppState('error');
+        stopPolling();
+      }
     } catch (error) {
-      console.error('Error loading jobs:', error);
-      showAlert('Failed to load jobs. Please try again.', 'danger');
-    } finally {
-      setLoading(false);
+      console.error('Error loading job progress:', error);
+      showAlert('Failed to load job progress. Please try again.', 'danger');
     }
   }, []);
 
@@ -36,34 +48,64 @@ const App = () => {
 
   // Handle job creation
   const handleJobCreated = (job) => {
-    showAlert(
-      `Job ${job.id} ${job.is_existing ? 'retrieved' : 'created'} successfully! ${job.message}`,
-      'success'
-    );
-    loadJobs(); // Reload jobs to show the new one
+    setCurrentJob(job);
+    
+    // If job already exists and is completed, go directly to results
+    if (job.is_existing && job.status === 'completed') {
+      setAppState('completed');
+      showAlert(
+        `Job ${job.id} already exists and is completed! ${job.message}`,
+        'info'
+      );
+      // Load full job data to get llm_text_content
+      loadFullJobData(job.id);
+    } else if (job.is_existing && job.status === 'error') {
+      setAppState('error');
+      showAlert(
+        `Job ${job.id} already exists but failed. ${job.message}`,
+        'warning'
+      );
+    } else {
+      // New job or existing job still processing
+      setAppState('processing');
+      showAlert(
+        `Job ${job.id} ${job.is_existing ? 'retrieved' : 'created'} successfully! ${job.message}`,
+        'success'
+      );
+      startPolling(job.id);
+    }
   };
 
-  // Handle job update
-  const handleJobUpdate = (updatedJob) => {
-    setJobs(prevJobs => 
-      prevJobs.map(job => 
-        job.id === updatedJob.id ? updatedJob : job
-      )
-    );
+  // Load full job data for completed jobs
+  const loadFullJobData = async (jobId) => {
+    try {
+      const fullJob = await jobService.getJob(jobId);
+      setCurrentJob(fullJob);
+    } catch (error) {
+      console.error('Error loading full job data:', error);
+      showAlert('Failed to load job details. Please try again.', 'danger');
+    }
   };
 
-  // Handle refresh button
-  const handleRefresh = () => {
-    loadJobs();
+  // Handle new submission
+  const handleNewSubmission = () => {
+    console.log('Resetting app state for new submission');
+    stopPolling(); // Stop any ongoing polling
+    setPollingInterval(null); // Clear polling interval state
+    setCurrentJob(null);
+    setAppState('idle');
+    setAlert(null);
+    setLoading(false); // Reset loading state
+    setFormKey(Date.now()); // Force form re-render
   };
 
-  // Start polling for job updates
-  const startPolling = () => {
+  // Start polling for job progress
+  const startPolling = (jobId) => {
     if (pollingInterval) return;
     
     const interval = setInterval(() => {
-      loadJobs();
-    }, 3000); // Poll every 3 seconds
+      loadJobProgress(jobId);
+    }, 2000); // Poll every 2 seconds
     
     setPollingInterval(interval);
   };
@@ -78,28 +120,17 @@ const App = () => {
 
   // Initialize component
   useEffect(() => {
-    loadJobs();
-    startPolling();
-
+    console.log('App mounted, current state:', { appState, currentJob: currentJob?.id });
     // Cleanup on unmount
     return () => {
       stopPolling();
     };
-  }, [loadJobs]);
+  }, []);
 
-  // Handle visibility change (resume polling when page becomes visible)
+  // Debug app state changes
   useEffect(() => {
-    const handleVisibilityChange = () => {
-      if (!document.hidden) {
-        loadJobs();
-      }
-    };
-
-    document.addEventListener('visibilitychange', handleVisibilityChange);
-    return () => {
-      document.removeEventListener('visibilitychange', handleVisibilityChange);
-    };
-  }, [loadJobs]);
+    console.log('App state changed:', { appState, currentJob: currentJob?.id, status: currentJob?.status });
+  }, [appState, currentJob]);
 
   return (
     <div className="container-fluid">
@@ -123,55 +154,53 @@ const App = () => {
           />
         )}
 
-        {/* URL Submission Form */}
-        <div className="row mb-4">
-          <div className="col-12">
-            <UrlForm
-              onJobCreated={handleJobCreated}
-              onError={showAlert}
-            />
-          </div>
-        </div>
-
-        {/* Jobs Dashboard */}
+        {/* Main Content */}
         <div className="row">
           <div className="col-12">
-            <div className="card">
-              <div className="card-header d-flex justify-content-between align-items-center">
-                <h5 className="mb-0">
-                  <i className="fas fa-tasks me-2"></i>
-                  Crawling Jobs
-                </h5>
-                <button
-                  className="btn btn-outline-secondary btn-sm"
-                  onClick={handleRefresh}
-                  disabled={loading}
-                >
-                  <i className="fas fa-sync-alt me-1"></i>
-                  Refresh
-                </button>
+            {appState === 'idle' && (
+              <UrlForm
+                key={formKey}
+                onJobCreated={handleJobCreated}
+                onError={showAlert}
+              />
+            )}
+            
+            {appState === 'processing' && currentJob && (
+              <ProgressView
+                progress={currentJob.progress_percentage}
+                message={currentJob.progress_message}
+                status={currentJob.status}
+              />
+            )}
+            
+            {appState === 'completed' && currentJob && (
+              <ResultsView
+                job={currentJob}
+                onNewSubmission={handleNewSubmission}
+              />
+            )}
+            
+            {appState === 'error' && currentJob && (
+              <div className="card">
+                <div className="card-header">
+                  <h5 className="mb-0 text-danger">
+                    <i className="fas fa-exclamation-triangle me-2"></i>
+                    Processing Failed
+                  </h5>
+                </div>
+                <div className="card-body">
+                  <p className="text-muted">An error occurred while processing your request.</p>
+                  <button
+                    type="button"
+                    className="btn btn-primary"
+                    onClick={handleNewSubmission}
+                  >
+                    <i className="fas fa-plus me-2"></i>
+                    Try Again
+                  </button>
+                </div>
               </div>
-              <div className="card-body">
-                {/* Loading indicator */}
-                {loading && (
-                  <div className="text-center py-4">
-                    <div className="spinner-border text-primary" role="status">
-                      <span className="visually-hidden">Loading...</span>
-                    </div>
-                    <p className="mt-2 text-muted">Loading jobs...</p>
-                  </div>
-                )}
-
-                {/* Jobs table */}
-                {!loading && (
-                  <JobsTable
-                    jobs={jobs}
-                    onJobUpdate={handleJobUpdate}
-                    onError={showAlert}
-                  />
-                )}
-              </div>
-            </div>
+            )}
           </div>
         </div>
       </div>
@@ -180,4 +209,6 @@ const App = () => {
 };
 
 export default App;
+
+
 

@@ -15,13 +15,14 @@ sys.path.append(str(Path(__file__).parent.parent))
 
 from app.database import SessionLocal
 from app import models
-from app.crawler_simple import crawl_url_job
+from app.crawler import crawl_url_job
 from app.helper import get_text_hash
 from sqlalchemy import and_
 
 # Configure logging
-log_file = os.path.join('/app/logs', 'monitor.log')
-os.makedirs(os.path.dirname(log_file), exist_ok=True)
+log_dir = os.path.join(os.path.dirname(__file__), '..', 'logs')
+log_file = os.path.join(log_dir, 'monitor.log')
+os.makedirs(log_dir, exist_ok=True)
 
 logging.basicConfig(
     level=logging.INFO,
@@ -47,17 +48,18 @@ def should_monitor_url(job: models.URLJob) -> bool:
     
     # Skip if last crawled was less than 24 hours ago
     if job.last_crawled:
-        time_since_last_crawl = datetime.datetime.utcnow() - job.last_crawled
+        time_since_last_crawl = datetime.datetime.now(datetime.timezone.utc) - job.last_crawled
         if time_since_last_crawl.total_seconds() < 24 * 3600:  # 24 hours
             return False
     
     return True
 
+
 def monitor_urls():
     """
     Main monitoring function that checks all URLs for changes.
     """
-    logger.info("🔍 Starting URL monitoring process...")
+    logger.info("Starting URL monitoring process...")
     
     db = SessionLocal()
     try:
@@ -69,7 +71,7 @@ def monitor_urls():
             )
         ).all()
         
-        logger.info(f"📊 Found {len(jobs_to_monitor)} URLs to monitor")
+        logger.info(f"Found {len(jobs_to_monitor)} URLs to monitor")
         
         changed_urls = []
         error_urls = []
@@ -85,48 +87,57 @@ def monitor_urls():
                 previous_hash = job.content_hash
                 
                 # Update monitoring timestamp
-                job.last_monitored = datetime.datetime.utcnow()
+                job.last_monitored = datetime.datetime.now(datetime.timezone.utc)
                 db.commit()
                 
                 # Re-crawl the URL to get fresh content
-                logger.info(f"🔄 Re-crawling: {job.url}")
+                logger.info(f"Re-crawling: {job.url}")
                 crawl_url_job(job.id)
                 
                 # Refresh the job from database to get updated content
                 db.refresh(job)
                 
-                # Check if content has changed
+                # Check if content hash changed (indicates llms.txt was regenerated)
                 if previous_hash and job.content_hash != previous_hash:
-                    logger.info(f"✅ Content changed detected for: {job.url}")
+                    logger.info(f"Content changed detected for: {job.url}")
                     job.content_changed = True
                     job.previous_content_hash = previous_hash
                     job.status = "updated"
                     changed_urls.append(job.url)
+                    
+                    # Send email notifications if content changed
+                    if job.llm_text_content:
+                        try:
+                            from app.email_utils import send_bulk_notifications
+                            send_bulk_notifications(job.id, job.llm_text_content, job.url)
+                            logger.info(f"Email notifications sent for {job.url}")
+                        except Exception as email_error:
+                            logger.error(f"Failed to send email notifications for {job.url}: {email_error}")
                 else:
-                    logger.info(f"📝 No content changes for: {job.url}")
+                    logger.info(f"No content changes for: {job.url}")
                     job.content_changed = False
                 
                 db.commit()
                 
             except Exception as e:
-                logger.error(f"❌ Error monitoring {job.url}: {e}")
+                logger.error(f"Error monitoring {job.url}: {e}")
                 error_urls.append(job.url)
                 continue
         
         # Summary
-        logger.info(f"📈 Monitoring Summary:")
-        logger.info(f"   ✅ URLs with changes: {len(changed_urls)}")
-        logger.info(f"   ❌ URLs with errors: {len(error_urls)}")
-        logger.info(f"   📊 Total processed: {len(jobs_to_monitor)}")
+        logger.info(f"Monitoring Summary:")
+        logger.info(f"URLs with changes: {len(changed_urls)}")
+        logger.info(f"URLs with errors: {len(error_urls)}")
+        logger.info(f"Total processed: {len(jobs_to_monitor)}")
         
         if changed_urls:
-            logger.info(f"🔄 Changed URLs: {', '.join(changed_urls)}")
+            logger.info(f"Changed URLs: {', '.join(changed_urls)}")
         
         if error_urls:
-            logger.info(f"❌ Error URLs: {', '.join(error_urls)}")
+            logger.info(f"Error URLs: {', '.join(error_urls)}")
             
     except Exception as e:
-        logger.error(f"💥 Fatal error in monitoring process: {e}")
+        logger.error(f"Fatal error in monitoring process: {e}")
         raise
     finally:
         db.close()

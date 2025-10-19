@@ -3,6 +3,7 @@ import { jobService } from '../services/api';
 
 const UrlForm = ({ onJobCreated, onError }) => {
   const [url, setUrl] = useState('');
+  const [email, setEmail] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleSubmit = async (e) => {
@@ -16,9 +17,10 @@ const UrlForm = ({ onJobCreated, onError }) => {
     setIsSubmitting(true);
     
     try {
-      const job = await jobService.createJob(url.trim());
+      const job = await jobService.createJob(url.trim(), email.trim() || null);
       onJobCreated(job);
       setUrl('');
+      setEmail('');
     } catch (error) {
       console.error('Error submitting URL:', error);
       onError(error.response?.data?.detail || error.message || 'Failed to submit URL');
@@ -38,7 +40,7 @@ const UrlForm = ({ onJobCreated, onError }) => {
       <div className="card-body">
         <form onSubmit={handleSubmit}>
           <div className="row">
-            <div className="col-md-8">
+            <div className="col-md-6">
               <div className="mb-3">
                 <label htmlFor="urlInput" className="form-label">Website URL</label>
                 <input
@@ -57,6 +59,23 @@ const UrlForm = ({ onJobCreated, onError }) => {
               </div>
             </div>
             <div className="col-md-4">
+              <div className="mb-3">
+                <label htmlFor="emailInput" className="form-label">Email (Optional)</label>
+                <input
+                  type="email"
+                  className="form-control"
+                  id="emailInput"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="your@email.com"
+                  disabled={isSubmitting}
+                />
+                <div className="form-text">
+                  Get notified when content changes.
+                </div>
+              </div>
+            </div>
+            <div className="col-md-2">
               <div className="mb-3">
                 <label className="form-label">&nbsp;</label>
                 <button
@@ -86,4 +105,6 @@ const UrlForm = ({ onJobCreated, onError }) => {
 };
 
 export default UrlForm;
+
+
 

@@ -4,20 +4,24 @@ from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 from .core.config import settings
 
-# Creates the engine to connect the code to the database
-# Disabled check_same_thread to enable multiple threads to interact with 
-# database.
+# Creates the database engine
 engine = create_engine(
     settings.DATABASE_URL, connect_args={"check_same_thread": False}
 )
 
-# Create a SessionLocal class. Each instance of this class will be a database session.
+# Create a session factory
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
-# Create a Base class. Our ORM models will inherit from this class.
+# Base class for our ORM models
 Base = declarative_base()
 
-# To get a DB session for each request.
+# Import models to ensure tables are registered
+from . import models
+
+# Create all tables
+Base.metadata.create_all(bind=engine)
+
+# Get a database session for each request
 def get_db():
     db = SessionLocal()
     try:

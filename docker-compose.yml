@@ -1,13 +1,32 @@
 version: '3.8'
 
 services:
+  nginx:
+    image: nginx:alpine
+    container_name: llm-text-generator-nginx
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      - backend
+      - frontend
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
   backend:
     build:
       context: ./backend
       dockerfile: Dockerfile
     container_name: llm-text-generator-backend
-    ports:
-      - "8000:8000"
+    # Remove direct port exposure since nginx will proxy
+    # ports:
+    #   - "8000:8000"
     volumes:
       - ./backend/data:/app/data
       - ./backend/logs:/app/logs
@@ -27,8 +46,9 @@ services:
       context: ./frontend
       dockerfile: Dockerfile
     container_name: llm-text-generator-frontend
-    ports:
-      - "3000:3000"
+    # Remove direct port exposure since nginx will proxy
+    # ports:
+    #   - "3000:3000"
     depends_on:
       - backend
     restart: unless-stopped
