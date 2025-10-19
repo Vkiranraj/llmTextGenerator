@@ -21,7 +21,15 @@ This guide will walk you through deploying your LLM Text Generator application t
 3. Choose your repository: `llmTextGenerator`
 4. Railway will automatically detect your `Dockerfile`
 
-### 3. Configure Service
+### 3. Add Persistent PostgreSQL Database
+**IMPORTANT**: To prevent database resets on deployment, you need to add a persistent PostgreSQL database:
+
+1. **In your Railway project dashboard, click "New Service"**
+2. **Select "Database" → "PostgreSQL"**
+3. **This creates a persistent database that won't reset on deployments**
+4. **Railway will automatically provide the `DATABASE_URL` environment variable**
+
+### 4. Configure Service
 Railway will automatically detect your `Dockerfile`. You can configure:
 
 **Service Name**: `llm-text-generator` (or your preferred name)
@@ -84,6 +92,26 @@ openssl rand -hex 32
 2. Click on your service
 3. Go to "Variables" tab
 4. Add each variable with its value
+
+## Database Persistence
+
+### Why Database Resets Happen
+By default, Railway uses ephemeral storage that gets reset on each deployment. This is why your PostgreSQL database data disappears.
+
+### Solution: Persistent PostgreSQL Database
+1. **Add PostgreSQL Service**: In your Railway project, click "New Service" → "Database" → "PostgreSQL"
+2. **Add Configuration**: Set the railway `DATABASE_URL` environment variable
+3. **Persistent Storage**: This database will persist across deployments and won't reset
+
+### Verify Database Persistence
+After adding the PostgreSQL service:
+1. **Check Environment Variables**: The `DATABASE_URL` should be automatically set
+2. **Test Deployment**: Deploy your app and add some data
+3. **Redeploy**: Trigger a new deployment
+4. **Verify Data**: Your data should still be there after redeployment
+
+### Database Connection
+Your application will automatically use the persistent PostgreSQL database instead of SQLite when the `DATABASE_URL` environment variable is set.
 
 ## Database
 Railway automatically provides a PostgreSQL database. The application will use the `DATABASE_URL` environment variable.
