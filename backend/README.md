@@ -5,12 +5,13 @@ A FastAPI-based backend service for crawling websites and generating LLM text co
 ## Features
 
 - **URL Crawling**: Crawl websites with configurable depth and page limits
+- **AI Enhancement**: OpenAI integration for intelligent categorization and summaries
 - **LLM Text Generation**: Extract and process content for LLM consumption
 - **Content Monitoring**: Track content changes over time
 - **Email Notifications**: Send alerts when content changes
 - **RESTful API**: Complete API for job management
 - **Database Storage**: SQLite/PostgreSQL support
-- **Docker Ready**: Containerized deployment
+- **Single Container**: All services in one Docker container
 
 ## Quick Start
 
@@ -36,8 +37,9 @@ uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 
 ### Production Deployment
 ```bash
-# Docker
-docker-compose up -d backend
+# Docker (single container)
+docker build -t llm-text-generator .
+docker run -d -p 80:80 --env-file .env --name llm-text-generator llm-text-generator
 
 # Railway
 railway up
@@ -99,6 +101,15 @@ curl "http://localhost:8000/jobs/1/download" -o content.txt
 | `SMTP_PASSWORD` | | SMTP password |
 | `FROM_EMAIL` | `noreply@example.com` | Sender email address |
 
+### OpenAI Configuration
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `OPENAI_API_KEY` | | OpenAI API key for AI features |
+| `OPENAI_MODEL` | `gpt-4o-mini` | OpenAI model to use |
+| `OPENAI_MAX_TOKENS` | `500` | Maximum tokens for responses |
+| `OPENAI_TEMPERATURE` | `0.3` | Response randomness (0-1) |
+
 ### Crawling Settings
 
 | Variable | Default | Description |
@@ -120,18 +131,18 @@ backend/
 │   ├── main.py              # FastAPI application
 │   ├── core/
 │   │   └── config.py         # Configuration management
-│   ├── models/
-│   │   └── models.py        # Database models
-│   ├── schemas/
-│   │   └── schemas.py       # Pydantic schemas
-│   ├── api/
-│   │   └── endpoints/       # API route handlers
+│   ├── models.py            # Database models
+│   ├── schemas.py           # Pydantic schemas
+│   ├── crud.py              # CRUD operations
 │   ├── database.py          # Database connection
 │   ├── crawler.py           # Web crawling logic
+│   ├── openai_service.py    # OpenAI integration
 │   ├── email_utils.py       # Email functionality
 │   └── helper.py            # Utility functions
 ├── scripts/
 │   └── monitor_urls.py      # URL monitoring script
+├── data/                    # SQLite database storage
+├── logs/                    # Application logs
 ├── requirements.txt         # Python dependencies
 ├── Dockerfile              # Container configuration
 └── README.md               # This file
@@ -193,7 +204,7 @@ SELECT * FROM jobs;
 ### Logs
 - **Application logs**: `logs/app.log`
 - **Monitoring logs**: `logs/monitor.log`
-- **Docker logs**: `docker-compose logs backend`
+- **Docker logs**: `docker logs llm-text-generator`
 
 ## Deployment
 
@@ -201,11 +212,9 @@ The backend service can be deployed in multiple environments:
 
 ### Docker Deployment
 ```bash
-# Single service
-docker-compose up -d backend
-
-# Full stack
-docker-compose up -d
+# Single container (includes backend, frontend, nginx, monitor)
+docker build -t llm-text-generator .
+docker run -d -p 80:80 --env-file .env --name llm-text-generator llm-text-generator
 ```
 
 ### Railway Deployment
@@ -222,7 +231,7 @@ uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 ### Environment Variables
 All configuration is handled through environment variables:
 - **Local**: Use `.env` file
-- **Docker**: Set in `docker-compose.yml`
+- **Docker**: Use `--env-file .env` flag
 - **Railway**: Set in Railway dashboard
 - **Production**: Railway dashboard values override local settings
 
