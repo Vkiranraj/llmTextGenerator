@@ -1,0 +1,15 @@
+# Railway ignore file
+node_modules/
+llmTextGenerator/
+*.txt
+.git/
+.gitignore
+README.md
+DOCKER_README.md
+docker-compose.yml
+nginx.conf.template
+regenerate_*.py
+REGENERATE_README.md
+backend/logs/
+backend/data/
+*.log

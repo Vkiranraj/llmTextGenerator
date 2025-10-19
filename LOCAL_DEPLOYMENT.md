@@ -1,0 +1,294 @@
+# Local Deployment Guide
+
+This guide will help you deploy the LLM Text Generator application locally using Docker.
+
+## Prerequisites
+
+- Docker and Docker Compose installed
+- Git (to clone the repository)
+- OpenAI API key (optional, for AI-enhanced features)
+
+## Quick Start
+
+### 1. Clone the Repository
+```bash
+git clone <your-repository-url>
+cd llmTextGenerator
+```
+
+### 2. Create Environment File
+```bash
+touch .env
+```
+
+### 3. Configure Environment Variables
+Edit the `.env` file with your settings:
+
+```bash
+# Application Configuration
+BASE_URL=http://localhost:8000
+
+# Database Configuration
+DATABASE_URL=sqlite:///./data/url_monitor.db
+
+# Security Configuration
+SECRET_KEY=your-secret-key-change-in-production
+ENCRYPTION_KEY=
+
+# OpenAI Configuration (Optional)
+OPENAI_API_KEY=your-openai-api-key-here
+OPENAI_MODEL=gpt-4o-mini
+OPENAI_MAX_TOKENS=500
+OPENAI_TEMPERATURE=0.3
+
+# Crawling Configuration
+MAX_PAGES=30
+MAX_DEPTH=1
+MAX_CONTENT_PARAGRAPHS=10
+REQUESTS_TIMEOUT=10
+PLAYWRIGHT_TIMEOUT=60000
+CRAWL_DELAY=2
+GRACE_PERIOD_CRAWLS=2
+
+# Email Configuration (Optional)
+SMTP_HOST=smtp.gmail.com
+SMTP_PORT=587
+SMTP_USER=your-email@gmail.com
+SMTP_PASSWORD=your-app-password
+FROM_EMAIL=noreply@yourdomain.com
+
+# Docker Configuration
+NGINX_PORT=80
+DOMAIN_NAME=localhost
+```
+
+### 4. Generate Secret Keys
+```bash
+# Generate SECRET_KEY
+openssl rand -hex 32
+
+# Generate ENCRYPTION_KEY (optional)
+openssl rand -hex 32
+```
+
+### 5. Start the Application
+```bash
+docker-compose up -d
+```
+
+### 6. Access the Application
+Open your browser and go to: `http://localhost`
+
+## Detailed Setup
+
+### Environment Variables Explained
+
+#### Required Variables:
+- `SECRET_KEY` - Used for session security and encryption
+- `BASE_URL` - The base URL of your application (for local development: http://localhost:8000)
+
+#### Optional Variables:
+- `OPENAI_API_KEY` - Your OpenAI API key for AI-enhanced categorization and summaries
+- `ENCRYPTION_KEY` - Additional encryption key (uses SECRET_KEY if not set)
+- `MAX_PAGES` - Maximum number of pages to crawl (default: 30)
+- `MAX_DEPTH` - Maximum crawl depth (default: 1)
+- `MAX_CONTENT_PARAGRAPHS` - Maximum paragraphs to extract per page (default: 10)
+
+#### Email Configuration (Optional):
+- `SMTP_HOST` - SMTP server for email notifications
+- `SMTP_PORT` - SMTP port (usually 587 for TLS)
+- `SMTP_USER` - Your email username
+- `SMTP_PASSWORD` - Your email password or app password
+- `FROM_EMAIL` - The "from" email address for notifications
+
+### Docker Services
+
+The application consists of 4 Docker services:
+
+1. **Backend** - FastAPI application with Python
+2. **Frontend** - React application
+3. **Monitor** - Background monitoring service
+4. **Nginx** - Reverse proxy and static file server
+
+### Database
+
+The application uses SQLite by default for local development. The database file is stored in `./backend/data/url_monitor.db`.
+
+### File Structure
+
+```
+llmTextGenerator/
+├── backend/                 # Python FastAPI backend
+│   ├── app/                # Application code
+│   ├── data/               # Database files
+│   └── logs/               # Log files
+├── frontend/               # React frontend
+├── docker-compose.yml      # Docker services configuration
+├── nginx.conf              # Nginx configuration
+└── .env                    # Environment variables
+```
+
+## Usage
+
+### 1. Add URLs to Monitor
+- Open the web interface at `http://localhost`
+- Enter the URL you want to monitor
+- Click "Start Monitoring"
+
+### 2. View Results
+- The application will crawl the website
+- Generate AI-enhanced summaries (if OpenAI is configured)
+- Create organized LLM text files
+- Display results in the web interface
+
+### 3. Download Generated Content
+- View the generated LLM text content
+- Copy or download the formatted content
+- Use for AI model training or analysis
+
+## Troubleshooting
+
+### Common Issues
+
+#### 1. Port Already in Use
+```bash
+# Check what's using port 80
+sudo lsof -i :80
+
+# Stop conflicting services or change port in .env
+NGINX_PORT=8080
+```
+
+#### 2. Docker Permission Issues
+```bash
+# Add your user to docker group (Linux)
+sudo usermod -aG docker $USER
+# Log out and back in
+```
+
+#### 3. OpenAI API Issues
+- Verify your API key is correct
+- Check if you have sufficient credits
+- Ensure the API key has proper permissions
+
+#### 4. Database Issues
+```bash
+# Reset database
+docker-compose down
+rm -rf backend/data/
+docker-compose up -d
+```
+
+### Logs and Debugging
+
+#### View Application Logs
+```bash
+# All services
+docker-compose logs
+
+# Specific service
+docker-compose logs backend
+docker-compose logs frontend
+docker-compose logs nginx
+docker-compose logs monitor
+```
+
+#### Check Service Status
+```bash
+docker-compose ps
+```
+
+#### Restart Services
+```bash
+# Restart all services
+docker-compose restart
+
+# Restart specific service
+docker-compose restart backend
+```
+
+## Development
+
+### Making Changes
+
+1. **Backend Changes**: Edit files in `backend/app/`
+2. **Frontend Changes**: Edit files in `frontend/src/`
+3. **Configuration Changes**: Edit `docker-compose.yml` or `nginx.conf`
+
+### Rebuilding After Changes
+```bash
+# Rebuild and restart
+docker-compose build
+docker-compose up -d
+```
+
+### Database Management
+```bash
+# Access database directly
+docker-compose exec backend python -c "
+from app.database import get_db
+from app.models import URLJob
+db = next(get_db())
+jobs = db.query(URLJob).all()
+print(f'Total jobs: {len(jobs)}')
+"
+```
+
+## Production Considerations
+
+### Security
+- Change default SECRET_KEY
+- Use strong passwords
+- Configure proper email settings
+- Set up SSL/TLS certificates
+
+### Performance
+- Adjust MAX_PAGES based on your needs
+- Configure proper timeout values
+- Monitor resource usage
+- Set up log rotation
+
+### Monitoring
+- Set up log monitoring
+- Configure health checks
+- Monitor disk space
+- Set up backup procedures
+
+## Support
+
+### Getting Help
+1. Check the logs for error messages
+2. Verify all environment variables are set
+3. Ensure Docker is running properly
+4. Check network connectivity
+
+### Common Commands
+```bash
+# Start services
+docker-compose up -d
+
+# Stop services
+docker-compose down
+
+# View logs
+docker-compose logs -f
+
+# Rebuild services
+docker-compose build --no-cache
+
+# Clean up
+docker-compose down -v
+docker system prune -f
+```
+
+## Next Steps
+
+Once you have the application running locally:
+
+1. **Test the functionality** with a simple website
+2. **Configure OpenAI** for enhanced AI features
+3. **Set up email notifications** if needed
+4. **Customize the configuration** for your use case
+5. **Deploy to production** using Railway or another platform
+
+For production deployment, see `RAILWAY_DEPLOYMENT.md`.
