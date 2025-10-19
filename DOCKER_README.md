@@ -240,7 +240,6 @@ MAX_DEPTH=1
 MAX_CONTENT_PARAGRAPHS=10
 REQUESTS_TIMEOUT=10
 PLAYWRIGHT_TIMEOUT=60000
-CRAWL_DELAY=2
 GRACE_PERIOD_CRAWLS=2
 
 # Frontend Variables
@@ -276,7 +275,6 @@ DOMAIN_NAME=localhost
 - `MAX_CONTENT_PARAGRAPHS`: Max content paragraphs (default: 10)
 - `REQUESTS_TIMEOUT`: Request timeout in seconds (default: 10)
 - `PLAYWRIGHT_TIMEOUT`: Playwright timeout in ms (default: 60000)
-- `CRAWL_DELAY`: Delay between page fetches (default: 2)
 - `GRACE_PERIOD_CRAWLS`: Crawls before deleting pages (default: 2)
 
 #### Frontend Variables

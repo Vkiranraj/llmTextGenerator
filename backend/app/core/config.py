@@ -20,7 +20,6 @@ class Settings(BaseSettings):
     MAX_CONTENT_PARAGRAPHS: int = 10
     REQUESTS_TIMEOUT: int = 10
     PLAYWRIGHT_TIMEOUT: int = 60000
-    CRAWL_DELAY: int = 2  # Delay in seconds between page fetches for politeness
     GRACE_PERIOD_CRAWLS: int = 2  # Number of crawls before deleting unseen pages
     USER_AGENT: str = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
 

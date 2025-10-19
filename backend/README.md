@@ -119,7 +119,6 @@ curl "http://localhost:8000/jobs/1/download" -o content.txt
 | `MAX_CONTENT_PARAGRAPHS` | `10` | Max paragraphs for LLM processing |
 | `REQUESTS_TIMEOUT` | `10` | HTTP request timeout (seconds) |
 | `PLAYWRIGHT_TIMEOUT` | `60000` | Playwright timeout (milliseconds) |
-| `CRAWL_DELAY` | `2` | Delay between requests (seconds) |
 | `GRACE_PERIOD_CRAWLS` | `2` | Grace period before deleting pages |
 
 ## Project Structure

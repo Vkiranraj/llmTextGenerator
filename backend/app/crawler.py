@@ -35,7 +35,7 @@ Key Components:
 5. Performance Optimizations:
    - HTTP HEAD requests for change detection
    - Cached link processing for unchanged pages
-   - Configurable politeness delays
+   - Randomized politeness delays (1-3 seconds)
    - Memory-efficient page pruning by score
    - Graceful error handling and fallbacks
 
