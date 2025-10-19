@@ -48,6 +48,7 @@ import traceback
 import time
 import json
 import requests
+import random
 import datetime
 
 from collections import deque
@@ -426,13 +427,20 @@ def crawl_url_job(url_job_id: int) -> None:
                             if norm_link not in visited:
                                 queue.append((norm_link, depth + 1))
                     
-                    # Politeness delay
+                    # Politeness delay with randomization
                     if pages_fetched < settings.MAX_PAGES:
-                        logger.info(f"Waiting {settings.CRAWL_DELAY} seconds...")
-                        time.sleep(settings.CRAWL_DELAY)
+                        delay = random.uniform(1, 3)  # Random delay between 1-3 seconds
+                        logger.info(f"Waiting {delay:.2f} seconds...")
+                        time.sleep(delay)
                     
                 except Exception as e:
-                    logger.error(f"Error crawling {normalized_url}: {e}")
+                    error_message = str(e)
+                    if "disallowed by robots.txt" in error_message.lower():
+                        logger.warning(f"Site disallowed by robots.txt: {normalized_url}")
+                        # Don't continue crawling this site if robots.txt disallows
+                        break
+                    else:
+                        logger.error(f"Error crawling {normalized_url}: {e}")
                     continue
         
         # Post-crawl cleanup
@@ -509,12 +517,21 @@ def crawl_url_job(url_job_id: int) -> None:
             job.progress_message = "Complete"
     
     except Exception as e:
+        error_message = str(e)
         logger.error(f"Fatal error in crawler: {e}")
         logger.error(traceback.format_exc())
-        job.status = "error"
-        job.progress_percentage = 0
-        job.progress_message = "Error occurred"
-        job.error_stack = traceback.format_exc()
+        
+        # Check if it's a robots.txt disallowed error
+        if "disallowed by robots.txt" in error_message.lower():
+            job.status = "error"
+            job.progress_percentage = 0
+            job.progress_message = "Disallowed by site"
+            job.error_stack = "Crawling disallowed by robots.txt"
+        else:
+            job.status = "error"
+            job.progress_percentage = 0
+            job.progress_message = "Error occurred"
+            job.error_stack = traceback.format_exc()
     
     finally:
         session.commit()
