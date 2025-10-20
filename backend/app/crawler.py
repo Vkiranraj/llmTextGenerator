@@ -82,11 +82,22 @@ class WebCrawler:
         return self
         
     def __exit__(self, exc_type, exc_val, exc_tb):
-        self.cleanup()
+        import asyncio
+        try:
+            loop = asyncio.get_event_loop()
+            if loop.is_running():
+                # If we're in an async context, schedule the cleanup
+                loop.create_task(self.cleanup())
+            else:
+                # If we're not in an async context, run it
+                asyncio.run(self.cleanup())
+        except RuntimeError:
+            # Fallback if no event loop exists
+            asyncio.run(self.cleanup())
         
-    def cleanup(self):
+    async def cleanup(self):
         if self._browser:
-            self._browser.close()
+            await self._browser.close()
             self._browser = None
         if self._playwright:
             await self._playwright.stop()
