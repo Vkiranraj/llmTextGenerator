@@ -45,7 +45,7 @@ def should_monitor_url(job: models.URLJob) -> bool:
         return False
     
     # Skip if status is not completed
-    if job.status not in ['completed', 'updated']:
+                if job.status not in ['completed']:
         return False
     
     # Skip if last crawled was less than 24 hours ago
@@ -81,7 +81,7 @@ def monitor_urls():
         jobs_to_monitor = db.query(models.URLJob).filter(
             and_(
                 models.URLJob.monitoring_enabled == True,
-                models.URLJob.status.in_(['completed', 'updated'])
+                models.URLJob.status.in_(['completed'])
             )
         ).all()
         
@@ -117,7 +117,7 @@ def monitor_urls():
                     logger.info(f"Content changed detected for: {job.url}")
                     job.content_changed = True
                     job.previous_content_hash = previous_hash
-                    job.status = "updated"
+                    job.status = "completed"
                     changed_urls.append(job.url)
                     
                     # Send email notifications if content changed

@@ -13,7 +13,7 @@ class URLJob(Base):
     id = Column(Integer, primary_key=True, index=True)
     url = Column(String, index=True, nullable=False)
     
-    # Status can be: pending, in_progress, completed, error, updated
+    # Status can be: pending, in_progress, completed, error
     status = Column(String, default="pending", nullable=False)
     # the hash of the crawled content
     content_hash = Column(String, nullable=True)

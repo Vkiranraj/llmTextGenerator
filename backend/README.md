@@ -152,7 +152,7 @@ backend/
 ### Job
 - `id`: Primary key
 - `url`: Target URL
-- `status`: Job status (pending, processing, completed, error, updated)
+- `status`: Job status (pending, processing, completed, error)
 - `llm_text_content`: Generated LLM text
 - `content_hash`: Content hash for change detection
 - `created_at`: Creation timestamp
