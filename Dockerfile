@@ -11,7 +11,7 @@ RUN npm run build
 # Python backend stage
 FROM python:3.9-slim
 
-# Install system dependencies
+# Install system dependencies including Chromium dependencies
 RUN apt-get update && apt-get install -y \
     gcc \
     g++ \
@@ -20,12 +20,22 @@ RUN apt-get update && apt-get install -y \
     gnupg \
     cron \
     nginx \
+    libnss3 \
+    libatk-bridge2.0-0 \
+    libdrm2 \
+    libxkbcommon0 \
+    libgtk-3-0 \
+    libgbm1 \
+    libasound2 \
     && rm -rf /var/lib/apt/lists/*
 
 # Install Playwright
 RUN pip install playwright
 RUN playwright install chromium
 RUN playwright install-deps chromium
+
+# Verify Chromium installation
+RUN python3 -c "from playwright.sync_api import sync_playwright; p = sync_playwright().start(); browser = p.chromium.launch(headless=True); browser.close(); p.stop(); print('Chromium installation verified')"
 
 # Set working directory
 WORKDIR /app
