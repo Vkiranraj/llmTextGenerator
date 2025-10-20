@@ -3,11 +3,14 @@ import subprocess
 import sys
 
 from datetime import datetime
-from fastapi import FastAPI, Depends, HTTPException, BackgroundTasks
+from fastapi import FastAPI, Depends, HTTPException, BackgroundTasks, Request
 from fastapi.responses import StreamingResponse
 from io import BytesIO
 from sqlalchemy.orm import Session
 from typing import List
+from slowapi import Limiter, _rate_limit_exceeded_handler
+from slowapi.util import get_remote_address
+from slowapi.errors import RateLimitExceeded
 from . import crud, models, schemas
 from .database import engine, get_db
 from .core.config import settings
@@ -21,6 +24,9 @@ from monitor_urls import monitor_urls
 # In a production app, you would use a migration tool like Alembic.
 models.Base.metadata.create_all(bind=engine)
 
+# Configure rate limiter
+limiter = Limiter(key_func=get_remote_address)
+
 app = FastAPI(
     title=settings.PROJECT_NAME,
     description="An API to submit URLs for monitoring and content extraction.",
@@ -28,6 +34,10 @@ app = FastAPI(
     docs_url=None,
     redoc_url=None,
     openapi_url=None)
+
+# Add rate limiter to app state
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
 
 @app.get("/", tags=["Root"])
@@ -45,7 +55,8 @@ def health_check():
     return {"status": "healthy", "message": "Service is running"}
 
 @app.post("/jobs/", response_model=schemas.JobResponse, tags=["Jobs"])
-def create_new_job(job: schemas.JobCreate, background_tasks: BackgroundTasks, db: Session = Depends(get_db)):
+@limiter.limit("10/minute")  # Allow 10 job submissions per minute per IP
+def create_new_job(request: Request, job: schemas.JobCreate, background_tasks: BackgroundTasks, db: Session = Depends(get_db)):
     # Validate URL for security
     validation_result = url_validator.validate_url(job.url)
     if not validation_result.is_valid:
@@ -99,7 +110,8 @@ def create_new_job(job: schemas.JobCreate, background_tasks: BackgroundTasks, db
     )
 
 @app.get("/jobs/", response_model=List[schemas.JobResponse], tags=["Jobs"])
-def get_all_jobs(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
+@limiter.limit("60/minute")  # Allow 60 list requests per minute
+def get_all_jobs(request: Request, skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
     """
     Get all jobs with pagination.
     """
@@ -118,7 +130,8 @@ def get_all_jobs(skip: int = 0, limit: int = 100, db: Session = Depends(get_db))
     ]
 
 @app.get("/jobs/{job_id}", response_model=schemas.JobResponse, tags=["Jobs"])
-def get_job(job_id: int, db: Session = Depends(get_db)):
+@limiter.limit("120/minute")  # Allow 120 individual job requests per minute
+def get_job(request: Request, job_id: int, db: Session = Depends(get_db)):
     """
     Get a specific job by ID.
     """
@@ -140,7 +153,8 @@ def get_job(job_id: int, db: Session = Depends(get_db)):
     )
 
 @app.get("/jobs/{job_id}/download", tags=["Jobs"])
-def download_llm_text(job_id: int, db: Session = Depends(get_db)):
+@limiter.limit("30/minute")  # Allow 30 downloads per minute
+def download_llm_text(request: Request, job_id: int, db: Session = Depends(get_db)):
     """
     Download the generated LLM text for a specific job.
     """
@@ -161,7 +175,8 @@ def download_llm_text(job_id: int, db: Session = Depends(get_db)):
     )
 
 @app.get("/jobs/{job_id}/progress", response_model=schemas.JobProgress, tags=["Jobs"])
-def get_job_progress(job_id: int, db: Session = Depends(get_db)):
+@limiter.limit("180/minute")  # Allow 180 progress requests per minute (3 per second for polling)
+def get_job_progress(request: Request, job_id: int, db: Session = Depends(get_db)):
     """
     Get progress information for a specific job.
     """
@@ -177,7 +192,8 @@ def get_job_progress(job_id: int, db: Session = Depends(get_db)):
 
 
 @app.post("/monitor/trigger")
-def trigger_monitoring():
+@limiter.limit("5/hour")  # Allow 5 manual monitoring triggers per hour
+def trigger_monitoring(request: Request):
     """
     Manually trigger URL monitoring for demo/testing purposes.
     """
