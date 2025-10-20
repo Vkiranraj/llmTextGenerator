@@ -227,8 +227,8 @@ def get_monitor_status():
     
     # Check if cron is running
     try:
-        result = subprocess.run(['pgrep', 'cron'], capture_output=True, text=True)
-        cron_running = result.returncode == 0
+        result = subprocess.run(['ps', 'aux'], capture_output=True, text=True)
+        cron_running = 'cron' in result.stdout and 'grep' not in result.stdout
     except:
         cron_running = False
     

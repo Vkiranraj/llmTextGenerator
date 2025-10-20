@@ -43,9 +43,9 @@ class Settings(BaseSettings):
     OPENAI_MAX_TOKENS: int = 500
     OPENAI_TEMPERATURE: float = 0.3
     
-    # Demo configuration
-    DEMO_MODE: bool = False
-    MONITORING_INTERVAL_MINUTES: int = 1440  # Default to 24 hours (1440 minutes)
+    # Demo configuration - HARDCODED FOR DEMO
+    DEMO_MODE: bool = True  # HARDCODED FOR DEMO
+    MONITORING_INTERVAL_MINUTES: int = 5  # HARDCODED FOR DEMO (5 minutes)
 
     class Config:
         case_sensitive = True

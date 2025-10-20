@@ -57,8 +57,8 @@ RUN echo '#!/bin/bash' > /app/start.sh && \
     echo 'echo "Starting services..."' >> /app/start.sh && \
     echo 'echo "DEMO_MODE: $DEMO_MODE"' >> /app/start.sh && \
     echo 'echo "MONITORING_INTERVAL_MINUTES: $MONITORING_INTERVAL_MINUTES"' >> /app/start.sh && \
-    echo 'echo "Forcing demo mode for testing..."' >> /app/start.sh && \
-    echo 'if [ "$DEMO_MODE" = "true" ] || [ -z "$DEMO_MODE" ]; then' >> /app/start.sh && \
+    echo 'echo "HARDCODED DEMO MODE - 5 minute intervals"' >> /app/start.sh && \
+    echo 'if true; then' >> /app/start.sh && \
     echo '    echo "Setting up demo mode cron (every 5 minutes)"' >> /app/start.sh && \
     echo '    echo "*/5 * * * * cd /app && python3 /app/scripts/monitor_urls.py >> /app/logs/monitor.log 2>&1" | crontab -' >> /app/start.sh && \
     echo 'else' >> /app/start.sh && \
@@ -71,7 +71,7 @@ RUN echo '#!/bin/bash' > /app/start.sh && \
     echo 'service cron start' >> /app/start.sh && \
     echo 'sleep 2' >> /app/start.sh && \
     echo 'echo "Checking cron status..."' >> /app/start.sh && \
-    echo 'pgrep cron && echo "Cron is running" || echo "Cron failed to start"' >> /app/start.sh && \
+    echo 'ps aux | grep cron | grep -v grep && echo "Cron is running" || echo "Cron failed to start"' >> /app/start.sh && \
     echo 'echo "Starting FastAPI backend..."' >> /app/start.sh && \
     echo 'uvicorn app.main:app --host 0.0.0.0 --port 8000 &' >> /app/start.sh && \
     echo 'echo "Starting Nginx..."' >> /app/start.sh && \
