@@ -60,10 +60,10 @@ RUN echo '#!/bin/bash' > /app/start.sh && \
     echo 'echo "HARDCODED DEMO MODE - 5 minute intervals"' >> /app/start.sh && \
     echo 'if true; then' >> /app/start.sh && \
     echo '    echo "Setting up demo mode cron (every 5 minutes)"' >> /app/start.sh && \
-    echo '    echo "*/5 * * * * cd /app && python3 /app/scripts/monitor_urls.py >> /app/logs/monitor.log 2>&1" | crontab -' >> /app/start.sh && \
+    echo '    echo "*/5 * * * * cd /app && /usr/local/bin/python3 /app/scripts/monitor_urls.py >> /app/logs/monitor.log 2>&1" | crontab -' >> /app/start.sh && \
     echo 'else' >> /app/start.sh && \
     echo '    echo "Setting up production mode cron (daily at 2 AM)"' >> /app/start.sh && \
-    echo '    echo "0 2 * * * cd /app && python3 /app/scripts/monitor_urls.py >> /app/logs/monitor.log 2>&1" | crontab -' >> /app/start.sh && \
+    echo '    echo "0 2 * * * cd /app && /usr/local/bin/python3 /app/scripts/monitor_urls.py >> /app/logs/monitor.log 2>&1" | crontab -' >> /app/start.sh && \
     echo 'fi' >> /app/start.sh && \
     echo 'echo "Cron jobs set up:"' >> /app/start.sh && \
     echo 'crontab -l' >> /app/start.sh && \
@@ -71,7 +71,7 @@ RUN echo '#!/bin/bash' > /app/start.sh && \
     echo 'service cron start' >> /app/start.sh && \
     echo 'sleep 2' >> /app/start.sh && \
     echo 'echo "Checking cron status..."' >> /app/start.sh && \
-    echo 'ps aux | grep cron | grep -v grep && echo "Cron is running" || echo "Cron failed to start"' >> /app/start.sh && \
+    echo 'if [ -f /var/run/crond.pid ]; then echo "Cron is running"; else echo "Cron status unknown"; fi' >> /app/start.sh && \
     echo 'echo "Starting FastAPI backend..."' >> /app/start.sh && \
     echo 'uvicorn app.main:app --host 0.0.0.0 --port 8000 &' >> /app/start.sh && \
     echo 'echo "Starting Nginx..."' >> /app/start.sh && \
