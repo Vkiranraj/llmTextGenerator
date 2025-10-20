@@ -213,7 +213,7 @@ class WebCrawler:
             content_type = response.headers.get('content-type', '').lower()
             if 'text/html' in content_type:
                 soup = BeautifulSoup(response.text, 'html.parser')
-                title = soup.title.string.strip() if soup.title else ""
+                title = soup.title.get_text(strip=True) if soup.title else ""
                 return {
                     "url": url,
                     "title": title,
@@ -249,9 +249,11 @@ class WebCrawler:
         Smart extraction: prefer main content containers, fallback to individual elements.
         """
         soup = BeautifulSoup(html, 'html.parser')
-        title = soup.title.string.strip() if soup.title else ""
-        description_tag = soup.find("meta", attrs={"name": "description"})
-        description = description_tag["content"].strip() if description_tag else ""
+        title = soup.title.get_text(strip=True) if soup.title else ""
+        description_tag = soup.find("meta", attrs={"name": "description"}) or \
+                          soup.find("meta", attrs={"property": "og:description"})
+        _desc_content = description_tag.get("content") if description_tag else ""
+        description = _desc_content.strip() if isinstance(_desc_content, str) else ""
         
         content_parts = []
         
