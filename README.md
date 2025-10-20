@@ -89,7 +89,9 @@ The LLM Text Generator consists of several components working together:
 ```
 User submits URL → Frontend → Backend API → Database
                                     ↓
-                            Background Crawler
+                            FastAPI BackgroundTasks
+                                    ↓
+                            Background Crawler (Async)
                                     ↓
                             Content Extraction
                                     ↓

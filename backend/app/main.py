@@ -1,5 +1,4 @@
-from concurrent.futures import ThreadPoolExecutor
-from fastapi import FastAPI, Depends, HTTPException
+from fastapi import FastAPI, Depends, HTTPException, BackgroundTasks
 from fastapi.responses import StreamingResponse
 from io import BytesIO
 from sqlalchemy.orm import Session
@@ -26,8 +25,6 @@ app = FastAPI(
     redoc_url=None,
     openapi_url=None)
 
-# Create a thread pool executor for background tasks
-executor = ThreadPoolExecutor(max_workers=5)
 
 @app.get("/", tags=["Root"])
 def read_root():
@@ -44,7 +41,7 @@ def health_check():
     return {"status": "healthy", "message": "Service is running"}
 
 @app.post("/jobs/", response_model=schemas.JobResponse, tags=["Jobs"])
-def create_new_job(job: schemas.JobCreate, db: Session = Depends(get_db)):
+def create_new_job(job: schemas.JobCreate, background_tasks: BackgroundTasks, db: Session = Depends(get_db)):
     # Check if URL already exists
     existing_job = crud.get_job_by_url(db, job.url)
     if existing_job:
@@ -67,7 +64,16 @@ def create_new_job(job: schemas.JobCreate, db: Session = Depends(get_db)):
     
     # Start crawling in background
     import asyncio
-    future = executor.submit(asyncio.run, crawl_url_job(db_job.id))
+    def run_crawl_job(job_id: int):
+        try:
+            # Create new event loop for this background task
+            loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(loop)
+            loop.run_until_complete(crawl_url_job(job_id))
+        finally:
+            loop.close()
+    
+    background_tasks.add_task(run_crawl_job, db_job.id)
     
     return schemas.JobResponse(
         id=db_job.id,
