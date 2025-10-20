@@ -117,7 +117,7 @@ class WebCrawler:
     async def _get_browser(self) -> Browser:
         if not self._browser:
             self._playwright = await async_playwright().start()
-            self._browser = await self._playwright.firefox.launch(headless=True)
+            self._browser = await self._playwright.chromium.launch(headless=True)
         return self._browser
     
     def check_url_with_head(self, url: str, etag: Optional[str] = None, last_modified: Optional[str] = None) -> Dict[str, any]:
