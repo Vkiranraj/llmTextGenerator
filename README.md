@@ -83,42 +83,57 @@ The LLM Text Generator consists of several components working together:
 4. **Change Detection**: If hashes differ, content has changed
 5. **Update Process**: Regenerate LLM text and update database
 
-## Data Flow Diagram
+## System Workflows
 
+### 1. Initial URL Processing
 ```
-┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
-│   User Input    │    │   Web Frontend   │    │   React UI      │
-│   (URL Entry)   │───▶│   (Port 80)      │───▶│   (Port 3000)   │
-└─────────────────┘    └─────────────────┘    └─────────────────┘
-                                │
-                                ▼
-┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
-│   FastAPI       │    │   Job Creation  │    │   Background    │
-│   Backend       │◀───│   & Processing  │───▶│   Crawling      │
-│   (Port 8000)   │    │   Service        │    │   Service       │
-└─────────────────┘    └─────────────────┘    └─────────────────┘
-         │                       │                       │
-         ▼                       ▼                       ▼
-┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
-│   Database      │    │   OpenAI API    │    │   Content       │
-│   (SQLite/      │    │   Integration   │    │   Processing    │
-│   PostgreSQL)   │    │   (AI Analysis) │    │   & Hashing     │
-└─────────────────┘    └─────────────────┘    └─────────────────┘
-         │                       │                       │
-         ▼                       ▼                       ▼
-┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
-│   Job Storage   │    │   LLM Text      │    │   Content       │
-│   & Status      │    │   Generation    │    │   Change        │
-│   Tracking      │    │   & Storage     │    │   Detection     │
-└─────────────────┘    └─────────────────┘    └─────────────────┘
-                                │
-                                ▼
-┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
-│   Cron Monitor  │    │   Change        │    │   Automatic     │
-│   (Daily)       │───▶│   Detection     │───▶│   Content       │
-│   Background    │    │   & Hashing     │    │   Regeneration  │
-│   Service        │    │   Comparison    │    │   & Updates     │
-└─────────────────┘    └─────────────────┘    └─────────────────┘
+User submits URL → Frontend → Backend API → Database
+                                    ↓
+                            Background Crawler
+                                    ↓
+                            Content Extraction
+                                    ↓
+                            AI Processing (OpenAI)
+                                    ↓
+                            LLM Text Generation
+                                    ↓
+                            Database Storage
+```
+
+### 2. Content Change Monitoring
+```
+Cron Job (Daily 2 AM) → Check Completed Jobs
+                              ↓
+                        Re-crawl URLs
+                              ↓
+                        Compare Content Hashes
+                              ↓
+                        Changes Detected?
+                              ↓
+                        Regenerate LLM Text
+                              ↓
+                        Update Database
+```
+
+### 3. System Architecture
+```
+┌─────────────┐    ┌─────────────┐    ┌─────────────┐
+│   Frontend  │    │   Backend   │    │  Database   │
+│   (React)   │◀──▶│   (FastAPI) │◀──▶│ (SQLite/    │
+│             │    │             │    │ PostgreSQL) │
+└─────────────┘    └─────────────┘    └─────────────┘
+                           │
+                           ▼
+                   ┌─────────────┐
+                   │   Crawler   │
+                   │ (Playwright)│
+                   └─────────────┘
+                           │
+                           ▼
+                   ┌─────────────┐
+                   │   OpenAI    │
+                   │   (AI API)  │
+                   └─────────────┘
 ```
 
 ## Database Schema
