@@ -229,8 +229,8 @@ class WebCrawler:
             browser = await self._get_browser()
             page = await browser.new_page()
             await page.goto(url, wait_until="networkidle", timeout=settings.PLAYWRIGHT_TIMEOUT)
-            html = page.content()
-            title = page.title()
+            html = await page.content()
+            title = await page.title()
             await page.close()
             return {
                 "url": url,
