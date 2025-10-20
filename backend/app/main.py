@@ -279,3 +279,43 @@ def debug_environment():
         "python_path": os.system("which python3"),
         "python_version": os.system("python3 --version")
     }
+
+@app.get("/debug/email")
+def debug_email_config():
+    """
+    Debug email configuration and subscriptions.
+    """
+    from .core.config import settings
+    from .database import SessionLocal
+    from . import crud, models
+    
+    db = SessionLocal()
+    try:
+        # Check email configuration
+        email_config = {
+            "SMTP_HOST": settings.SMTP_HOST,
+            "SMTP_PORT": settings.SMTP_PORT,
+            "SMTP_USER": settings.SMTP_USER,
+            "SMTP_PASSWORD": "***" if settings.SMTP_PASSWORD else "NOT SET",
+            "FROM_EMAIL": settings.FROM_EMAIL
+        }
+        
+        # Check all jobs and their subscriptions
+        jobs = db.query(models.URLJob).all()
+        job_subscriptions = []
+        
+        for job in jobs:
+            subscriptions = crud.get_active_subscriptions_for_job(db, job.id)
+            job_subscriptions.append({
+                "job_id": job.id,
+                "url": job.url,
+                "status": job.status,
+                "subscriptions": [{"email": sub.email, "active": sub.is_active} for sub in subscriptions]
+            })
+        
+        return {
+            "email_config": email_config,
+            "jobs_and_subscriptions": job_subscriptions
+        }
+    finally:
+        db.close()

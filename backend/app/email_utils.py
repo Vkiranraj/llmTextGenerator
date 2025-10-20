@@ -3,8 +3,8 @@ Email utilities for sending notifications and managing subscriptions.
 """
 import smtplib
 import logging
-from email.mime.text import MimeText
-from email.mime.multipart import MimeMultipart
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
 from cryptography.fernet import Fernet
 from .core.config import settings
 from .database import SessionLocal
@@ -78,13 +78,13 @@ def send_email_notification(to_email: str, url: str, llm_text: str, subscription
         """
         
         # Create message
-        msg = MimeMultipart('alternative')
+        msg = MIMEMultipart('alternative')
         msg['Subject'] = subject
         msg['From'] = settings.FROM_EMAIL
         msg['To'] = to_email
         
         # Add HTML content
-        html_part = MimeText(html_body, 'html')
+        html_part = MIMEText(html_body, 'html')
         msg.attach(html_part)
         
         # Send email
