@@ -110,12 +110,22 @@ def send_email_notification(to_email: str, url: str, llm_text: str, subscription
         
         # Send email
         logger.info(f"Attempting to send email to {to_email} via {settings.SMTP_HOST}:{settings.SMTP_PORT}")
-        with smtplib.SMTP(settings.SMTP_HOST, settings.SMTP_PORT) as server:
-            server.starttls()
-            server.login(settings.SMTP_USER, settings.SMTP_PASSWORD)
-            server.send_message(msg)
+        logger.info(f"SMTP_USER: {settings.SMTP_USER}")
+        logger.info(f"SMTP_PASSWORD: {'***' if settings.SMTP_PASSWORD else 'NOT SET'}")
+        logger.info(f"FROM_EMAIL: {settings.FROM_EMAIL}")
+        if settings.SMTP_PORT == 465:
+            # Use SSL for port 465
+            with smtplib.SMTP_SSL(settings.SMTP_HOST, settings.SMTP_PORT) as server:
+                server.login(settings.SMTP_USER, settings.SMTP_PASSWORD)
+                server.send_message(msg)
+        else:
+            # Use STARTTLS for port 587
+            with smtplib.SMTP(settings.SMTP_HOST, settings.SMTP_PORT) as server:
+                server.starttls()
+                server.login(settings.SMTP_USER, settings.SMTP_PASSWORD)
+                server.send_message(msg)
         
-        logger.info(f"✅ Email notification sent to {to_email} for {url}")
+        logger.info(f"Email notification sent to {to_email} for {url}")
         return True
         
     except Exception as e:
