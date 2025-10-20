@@ -272,9 +272,15 @@ def debug_environment():
     Debug environment variables to see what Railway is passing.
     """
     import os
+    from .core.config import settings
+    
     return {
-        "DEMO_MODE": os.getenv("DEMO_MODE"),
-        "MONITORING_INTERVAL_MINUTES": os.getenv("MONITORING_INTERVAL_MINUTES"),
+        "DEMO_MODE": settings.DEMO_MODE,
+        "MONITORING_INTERVAL_MINUTES": settings.MONITORING_INTERVAL_MINUTES,
+        "env_vars": {
+            "DEMO_MODE": os.getenv("DEMO_MODE"),
+            "MONITORING_INTERVAL_MINUTES": os.getenv("MONITORING_INTERVAL_MINUTES")
+        },
         "all_demo_vars": {k: v for k, v in os.environ.items() if "DEMO" in k or "MONITORING" in k},
         "python_path": os.system("which python3"),
         "python_version": os.system("python3 --version")
