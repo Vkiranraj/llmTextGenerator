@@ -45,7 +45,7 @@ def should_monitor_url(job: models.URLJob) -> bool:
         return False
     
     # Skip if status is not completed
-                if job.status not in ['completed']:
+    if job.status not in ['completed']:
         return False
     
     # Skip if last crawled was less than 24 hours ago
