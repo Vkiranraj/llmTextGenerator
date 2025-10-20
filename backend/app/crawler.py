@@ -220,27 +220,44 @@ class WebCrawler:
                     "etag": response.headers.get('ETag'),
                     "last_modified": response.headers.get('Last-Modified')
                 }
+        except requests.exceptions.HTTPError as e:
+            status_code = e.response.status_code if hasattr(e, 'response') else None
+            logger.warning(f"Requests HTTP error for {url}: {e} (status: {status_code})")
+            
+            # Skip Playwright fallback for errors it can't help with
+            if status_code in [404, 500]:  # Not Found, Internal Server Error
+                logger.info(f"Skipping Playwright fallback for HTTP {status_code} - Playwright won't help")
+                raise  # Re-raise the original exception
+            else:
+                # For other HTTP errors, try Playwright fallback
+                should_fallback = True
         except Exception as e:
             logger.warning(f"Requests failed for {url}: {e}")
+            # For non-HTTP errors, try Playwright fallback
+            should_fallback = True
         
-        # Playwright fallback
-        try:
-            browser = await self._get_browser()
-            page = await browser.new_page()
-            await page.goto(url, wait_until="networkidle", timeout=settings.PLAYWRIGHT_TIMEOUT)
-            html = await page.content()
-            title = await page.title()
-            await page.close()
-            return {
-                "url": url,
-                "title": title,
-                "html": html,
-                "etag": None,
-                "last_modified": None
-            }
-        except Exception as e:
-            logger.error(f"Playwright failed for {url}: {e}")
-            raise
+        # Playwright fallback - only when it might help
+        if should_fallback:
+            try:
+                logger.info(f"Attempting Playwright fallback for {url}")
+                browser = await self._get_browser()
+                page = await browser.new_page()
+                await page.goto(url, wait_until="networkidle", timeout=settings.PLAYWRIGHT_TIMEOUT)
+                html = await page.content()
+                title = await page.title()
+                await page.close()
+                
+                logger.info(f"Playwright fallback successful for {url}")
+                return {
+                    "url": url,
+                    "title": title,
+                    "html": html,
+                    "etag": None,
+                    "last_modified": None
+                }
+            except Exception as e:
+                logger.error(f"Playwright fallback failed for {url}: {e}")
+                raise
     
     def parse_page_content(self, base_url: str, html: str) -> Dict[str, any]:
         """
