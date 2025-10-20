@@ -2,6 +2,8 @@
 
 A web application that crawls websites and generates AI-enhanced, organized text content optimized for Large Language Models (LLMs).
 Here is a live deployed version: https://llmtextgenerator-production.up.railway.app/
+
+here is a demo recording: https://youtu.be/bTT25tNtdYg
 ## Features
 
 - **Web Crawling**: Automatically crawls websites up to configurable depth
