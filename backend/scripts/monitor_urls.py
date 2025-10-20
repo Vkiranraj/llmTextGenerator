@@ -10,7 +10,7 @@ import os
 import datetime
 import logging
 from pathlib import Path
-
+from app.email_utils import send_bulk_notifications
 # Add the parent directory to the path so we can import from app
 sys.path.append(str(Path(__file__).parent.parent))
 
@@ -106,7 +106,8 @@ def monitor_urls():
                 
                 # Re-crawl the URL to get fresh content
                 logger.info(f"Re-crawling: {job.url}")
-                crawl_url_job(job.id)
+                import asyncio
+                asyncio.run(crawl_url_job(job.id))
                 
                 # Refresh the job from database to get updated content
                 db.refresh(job)
@@ -122,7 +123,7 @@ def monitor_urls():
                     # Send email notifications if content changed
                     if job.llm_text_content:
                         try:
-                            from app.email_utils import send_bulk_notifications
+                            logger.info(f"Sending email notifications for {job.url}")
                             send_bulk_notifications(job.id, job.llm_text_content, job.url)
                             logger.info(f"Email notifications sent for {job.url}")
                         except Exception as email_error:

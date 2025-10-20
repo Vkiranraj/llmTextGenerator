@@ -55,7 +55,7 @@ from collections import deque
 from typing import Dict, Set, Optional
 from urllib.parse import urljoin, urlparse
 from urllib import robotparser
-from playwright.sync_api import sync_playwright, Browser
+from playwright.async_api import async_playwright, Browser
 from bs4 import BeautifulSoup
 from sqlalchemy.orm import Session
 
@@ -89,7 +89,7 @@ class WebCrawler:
             self._browser.close()
             self._browser = None
         if self._playwright:
-            self._playwright.stop()
+            await self._playwright.stop()
             self._playwright = None
         self.session.close()
 
@@ -103,10 +103,10 @@ class WebCrawler:
         except Exception as e:
             logger.warning(f"Could not read robots.txt for {root_url}: {e}")
 
-    def _get_browser(self) -> Browser:
+    async def _get_browser(self) -> Browser:
         if not self._browser:
-            self._playwright = sync_playwright().start()
-            self._browser = self._playwright.firefox.launch(headless=True)
+            self._playwright = await async_playwright().start()
+            self._browser = await self._playwright.firefox.launch(headless=True)
         return self._browser
     
     def check_url_with_head(self, url: str, etag: Optional[str] = None, last_modified: Optional[str] = None) -> Dict[str, any]:
@@ -184,7 +184,7 @@ class WebCrawler:
                 'reason': f'HEAD failed, will try GET: {e}'
             }
     
-    def fetch_page_content(self, url: str) -> Dict[str, str]:
+    async def fetch_page_content(self, url: str) -> Dict[str, str]:
         """
         Fetch page content with requests first, fallback to Playwright.
         Returns dict with url, title, html, etag, and last_modified.
@@ -215,12 +215,12 @@ class WebCrawler:
         
         # Playwright fallback
         try:
-            browser = self._get_browser()
-            page = browser.new_page()
-            page.goto(url, wait_until="networkidle", timeout=settings.PLAYWRIGHT_TIMEOUT)
+            browser = await self._get_browser()
+            page = await browser.new_page()
+            await page.goto(url, wait_until="networkidle", timeout=settings.PLAYWRIGHT_TIMEOUT)
             html = page.content()
             title = page.title()
-            page.close()
+            await page.close()
             return {
                 "url": url,
                 "title": title,
@@ -285,7 +285,7 @@ class WebCrawler:
             "links": list(links)
         }
    
-def crawl_url_job(url_job_id: int) -> None:
+async def crawl_url_job(url_job_id: int) -> None:
     """
     Smart crawl with page-level change detection.
     Uses HTTP caching (ETag/Last-Modified) to avoid re-downloading unchanged pages.
@@ -376,7 +376,7 @@ def crawl_url_job(url_job_id: int) -> None:
                     job.progress_message = "Crawling website..."
                     session.commit()
                     
-                    page_data = crawler.fetch_page_content(normalized_url)
+                    page_data = await crawler.fetch_page_content(normalized_url)
                     parsed_data = crawler.parse_page_content(normalized_url, page_data["html"])
                     
                     # Calculate content hash and score

@@ -15,7 +15,7 @@ class Settings(BaseSettings):
     BASE_URL: str = "http://localhost:8000"
     
     # Crawling configuration
-    MAX_PAGES: int = 30
+    MAX_PAGES: int = 30  # Back to production value
     MAX_DEPTH: int = 1
     MAX_CONTENT_PARAGRAPHS: int = 10
     REQUESTS_TIMEOUT: int = 10
@@ -43,9 +43,9 @@ class Settings(BaseSettings):
     OPENAI_MAX_TOKENS: int = 500
     OPENAI_TEMPERATURE: float = 0.3
     
-    # Demo configuration - HARDCODED FOR DEMO
-    DEMO_MODE: bool = True  # HARDCODED FOR DEMO
-    MONITORING_INTERVAL_MINUTES: int = 5  # HARDCODED FOR DEMO (5 minutes)
+    # Demo configuration
+    DEMO_MODE: bool = False
+    MONITORING_INTERVAL_MINUTES: int = 1440  # 24 hours (1440 minutes)
 
     class Config:
         case_sensitive = True

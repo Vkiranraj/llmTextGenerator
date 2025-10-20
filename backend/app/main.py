@@ -76,7 +76,8 @@ def create_new_job(job: schemas.JobCreate, db: Session = Depends(get_db)):
         subscription = crud.create_email_subscription(db, db_job.id, job.email)
     
     # Start crawling in background
-    future = executor.submit(crawl_url_job, db_job.id)
+    import asyncio
+    future = executor.submit(asyncio.run, crawl_url_job(db_job.id))
     
     return schemas.JobResponse(
         id=db_job.id,
@@ -325,3 +326,31 @@ def debug_email_config():
         }
     finally:
         db.close()
+
+@app.get("/debug/config")
+def debug_config():
+    """
+    Debug all configuration values to see what's being used.
+    """
+    from .core.config import settings
+    import os
+    
+    return {
+        "crawling_config": {
+            "MAX_PAGES": settings.MAX_PAGES,
+            "MAX_DEPTH": settings.MAX_DEPTH,
+            "MAX_CONTENT_PARAGRAPHS": settings.MAX_CONTENT_PARAGRAPHS,
+            "REQUESTS_TIMEOUT": settings.REQUESTS_TIMEOUT,
+            "PLAYWRIGHT_TIMEOUT": settings.PLAYWRIGHT_TIMEOUT
+        },
+        "demo_config": {
+            "DEMO_MODE": settings.DEMO_MODE,
+            "MONITORING_INTERVAL_MINUTES": settings.MONITORING_INTERVAL_MINUTES
+        },
+        "env_vars": {
+            "MAX_PAGES": os.getenv("MAX_PAGES"),
+            "MAX_DEPTH": os.getenv("MAX_DEPTH"),
+            "DEMO_MODE": os.getenv("DEMO_MODE"),
+            "MONITORING_INTERVAL_MINUTES": os.getenv("MONITORING_INTERVAL_MINUTES")
+        }
+    }

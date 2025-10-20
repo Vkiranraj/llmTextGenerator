@@ -57,8 +57,8 @@ RUN echo '#!/bin/bash' > /app/start.sh && \
     echo 'echo "Starting services..."' >> /app/start.sh && \
     echo 'echo "DEMO_MODE: $DEMO_MODE"' >> /app/start.sh && \
     echo 'echo "MONITORING_INTERVAL_MINUTES: $MONITORING_INTERVAL_MINUTES"' >> /app/start.sh && \
-    echo 'echo "HARDCODED DEMO MODE - 5 minute intervals"' >> /app/start.sh && \
-    echo 'if true; then' >> /app/start.sh && \
+    echo 'echo "Production mode - daily monitoring"' >> /app/start.sh && \
+    echo 'if [ "$DEMO_MODE" = "true" ] || [ -z "$DEMO_MODE" ]; then' >> /app/start.sh && \
     echo '    echo "Setting up demo mode cron (every 5 minutes)"' >> /app/start.sh && \
     echo '    echo "*/5 * * * * cd /app && /usr/local/bin/python3 /app/scripts/monitor_urls.py >> /app/logs/monitor.log 2>&1" | crontab -' >> /app/start.sh && \
     echo 'else' >> /app/start.sh && \
