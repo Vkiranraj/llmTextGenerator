@@ -12,9 +12,9 @@ from . import crud, models, schemas
 from .database import engine, get_db
 from .core.config import settings
 from .crawler import crawl_url_job
-from monitor_urls import monitor_urls
 
 sys.path.append(os.path.join(os.path.dirname(__file__), '..', 'scripts'))
+from monitor_urls import monitor_urls
 
 # This command creates the database table if it doesn't exist.
 # In a production app, you would use a migration tool like Alembic.
