@@ -36,15 +36,18 @@ def _get_encryption_key() -> bytes:
     except:
         pass
     
-    # Fallback: pad or truncate to 32 bytes
-    key_bytes = encryption_key.encode()[:32].ljust(32, b'0')
-    return key_bytes
+    # Fallback: generate a new key if the provided one is invalid
+    import base64
+    import os
+    default_key = base64.urlsafe_b64encode(os.urandom(32))
+    return default_key
 
 def encrypt_subscription_id(subscription_id: int) -> str:
     """
     Encrypt a subscription ID to create a secure unsubscribe token.
     """
     key = _get_encryption_key()
+    logger.info(f"Generated key length: {len(key)}, type: {type(key)}")
     f = Fernet(key)
     token = f.encrypt(str(subscription_id).encode())
     return token.decode()
