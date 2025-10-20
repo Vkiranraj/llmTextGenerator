@@ -343,13 +343,13 @@ async def crawl_url_job(url_job_id: int) -> None:
         for p in session.query(CrawledPage).filter_by(url_job_id=job.id).all()
     }
     
-    # Store initial final state for comparison
-    initial_final_pages = session.query(CrawledPage).filter_by(url_job_id=job.id).order_by(CrawledPage.page_score.desc()).all()
-    initial_final_urls = set(p.url for p in initial_final_pages)
-    initial_final_hashes = set(p.content_hash for p in initial_final_pages)
+    # Capture initial state for comparison after pruning
+    initial_page_states = {
+        url: page.content_hash 
+        for url, page in existing_pages.items()
+    }
     
     seen_in_this_crawl: Set[str] = set()
-    pages_with_content_changes: Set[str] = set()  # Track actual content changes (only existing pages that changed)
     visited: Set[str] = set()
     normalized_root_url = helper.normalize_url(job.url)
     queue = deque([(normalized_root_url, 0)])
@@ -434,9 +434,8 @@ async def crawl_url_job(url_job_id: int) -> None:
                         page_record.last_seen = current_crawl_time
                         page_record.not_seen_count = 0
                         
-                        # Track if content actually changed
+                        # Log content changes
                         if old_hash != new_hash:
-                            pages_with_content_changes.add(normalized_url)
                             logger.info(f"Content hash changed for {normalized_url}")
                         else:
                             logger.info(f"Content unchanged for {normalized_url}")
@@ -460,7 +459,6 @@ async def crawl_url_job(url_job_id: int) -> None:
                         )
                         session.add(page_record)
                         existing_pages[normalized_url] = page_record
-                        pages_with_content_changes.add(normalized_url)  # New pages are changes
                     
                     pages_fetched += 1
                     
@@ -530,38 +528,39 @@ async def crawl_url_job(url_job_id: int) -> None:
             job.status = "error"
             job.error_stack = "No pages were successfully crawled"
         else:
-            # Compare final state after crawling with initial state before crawling
-            current_final_urls = set(p.url for p in final_pages)
-            current_final_hashes = set(p.content_hash for p in final_pages)
+            # Create final state snapshot
+            final_page_states = {
+                helper.normalize_url(page.url): page.content_hash 
+                for page in final_pages
+            }
             
-            # Simple comparison: are the final page sets the same?
-            urls_changed = current_final_urls != initial_final_urls
-            content_changed = current_final_hashes != initial_final_hashes
-            final_state_changed = urls_changed or content_changed
-            
-            if final_state_changed:
-                if urls_changed:
-                    added_urls = current_final_urls - initial_final_urls
-                    removed_urls = initial_final_urls - current_final_urls
-                    logger.info(f"Final page set changed: {len(current_final_urls)} pages (was {len(initial_final_urls)})")
-                    if added_urls:
-                        logger.info(f"Added pages: {list(added_urls)}")
-                    if removed_urls:
-                        logger.info(f"Removed pages: {list(removed_urls)}")
-                if content_changed:
-                    logger.info("Content hashes changed in final set")
+            # Compare initial vs final state
+            if job.last_monitored:  # Not first crawl
+                pages_changed = (initial_page_states != final_page_states)
+                
+                # Detailed logging
+                if pages_changed:
+                    added = set(final_page_states.keys()) - set(initial_page_states.keys())
+                    removed = set(initial_page_states.keys()) - set(final_page_states.keys())
+                    modified = {
+                        url for url in final_page_states 
+                        if url in initial_page_states 
+                        and final_page_states[url] != initial_page_states[url]
+                    }
+                    logger.info(f"State changed for {job.url}: {len(added)} added, {len(removed)} removed, {len(modified)} modified")
             else:
-                logger.info("Final state unchanged - same pages with same content")
+                pages_changed = True  # First crawl
             
-            # Only regenerate llms.txt if final state changed or this is the first crawl
-            if final_state_changed or not job.llm_text_content:
-                logger.info(f"Final state changed for {job.url}, regenerating llms.txt")
+            # Only regenerate llms.txt if state changed or this is the first crawl
+            if pages_changed or not job.llm_text_content:
+                logger.info(f"Regenerating llms.txt for {job.url}")
                 llm_text = helper.generate_llms_txt(final_pages, job.url)
                 job.llm_text_content = llm_text
                 job.content_hash = helper.get_text_hash(llm_text)
+                
                 logger.info(f"LLM text generated and stored in database ({len(final_pages)} pages)")
             else:
-                logger.info(f"Final state unchanged for {job.url}, skipping llms.txt regeneration")
+                logger.info(f"No state changes detected for {job.url}, skipping llms.txt regeneration")
             
             job.status = "completed"
             job.progress_percentage = 100
