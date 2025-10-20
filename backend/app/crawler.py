@@ -194,9 +194,56 @@ class WebCrawler:
                 'reason': f'HEAD failed, will try GET: {e}'
             }
     
+    def _is_spa_shell(self, html: str, url: str) -> bool:
+        """
+        Detect if HTML is likely a JavaScript SPA shell with no rendered content.
+        Indicators: Few links, minimal content, SPA framework markers.
+        """
+        soup = BeautifulSoup(html, 'html.parser')
+        
+        # Count actual content links (not just navigation)
+        links = soup.find_all('a', href=True)
+        valid_links = [
+            link for link in links 
+            if link.get('href') and not link.get('href').startswith('#')
+            and not link.get('href').startswith('javascript:')
+        ]
+        
+        # Check for common SPA framework indicators
+        spa_indicators = [
+            soup.find('div', id='root'),  # React
+            soup.find('div', id='app'),   # Vue
+            soup.find('div', id='__next'),  # Next.js
+            soup.find('ng-app'),  # Angular
+            soup.find('div', {'data-reactroot': True}),
+            soup.find('div', {'data-react-root': True}),
+        ]
+        has_spa_marker = any(indicator for indicator in spa_indicators)
+        
+        # Check for minimal body content (mostly scripts and noscript)
+        body = soup.find('body')
+        if body:
+            # Count non-script, non-style, non-noscript elements with actual text
+            content_elements = [
+                elem for elem in body.find_all(['p', 'div', 'article', 'section', 'main'])
+                if elem.get_text(strip=True) and len(elem.get_text(strip=True)) > 20
+            ]
+            has_minimal_content = len(content_elements) < 3
+        else:
+            has_minimal_content = True
+        
+        # Verdict: It's likely an SPA shell if it has framework markers and few links/content
+        is_spa = has_spa_marker and (len(valid_links) < 5 or has_minimal_content)
+        
+        if is_spa:
+            logger.info(f"Detected SPA shell for {url} (links: {len(valid_links)}, spa_marker: {has_spa_marker}, minimal_content: {has_minimal_content})")
+        
+        return is_spa
+    
     async def fetch_page_content(self, url: str) -> Dict[str, str]:
         """
         Fetch page content with requests first, fallback to Playwright.
+        Automatically detects and handles JavaScript-heavy SPAs.
         Returns dict with url, title, html, etag, and last_modified.
         """
         if not helper.is_valid_url(url):
@@ -205,21 +252,28 @@ class WebCrawler:
         # if not self.robot_parser.can_fetch(settings.USER_AGENT, url):
         #     raise Exception(f"Crawling disallowed by robots.txt for {url}")
 
+        should_fallback = False
         try:
             response = self.session.get(url, timeout=settings.REQUESTS_TIMEOUT)
             response.raise_for_status()
             
             content_type = response.headers.get('content-type', '').lower()
             if 'text/html' in content_type:
-                soup = BeautifulSoup(response.text, 'html.parser')
-                title = soup.title.get_text(strip=True) if soup.title else ""
-                return {
-                    "url": url,
-                    "title": title,
-                    "html": response.text,
-                    "etag": response.headers.get('ETag'),
-                    "last_modified": response.headers.get('Last-Modified')
-                }
+                # Check if this is a JavaScript SPA shell
+                if self._is_spa_shell(response.text, url):
+                    logger.info(f"SPA detected for {url}, using Playwright for full rendering")
+                    should_fallback = True
+                else:
+                    # Regular HTML page, use requests result
+                    soup = BeautifulSoup(response.text, 'html.parser')
+                    title = soup.title.get_text(strip=True) if soup.title else ""
+                    return {
+                        "url": url,
+                        "title": title,
+                        "html": response.text,
+                        "etag": response.headers.get('ETag'),
+                        "last_modified": response.headers.get('Last-Modified')
+                    }
         except requests.exceptions.HTTPError as e:
             status_code = e.response.status_code if hasattr(e, 'response') else None
             logger.warning(f"Requests HTTP error for {url}: {e} (status: {status_code})")
@@ -236,7 +290,7 @@ class WebCrawler:
             # For non-HTTP errors, try Playwright fallback
             should_fallback = True
         
-        # Playwright fallback - only when it might help
+        # Playwright fallback - for errors or detected SPAs
         if should_fallback:
             try:
                 logger.info(f"Attempting Playwright fallback for {url}")

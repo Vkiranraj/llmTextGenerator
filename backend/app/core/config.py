@@ -16,7 +16,7 @@ class Settings(BaseSettings):
     
     # Crawling configuration
     MAX_PAGES: int = 30  # Back to production value
-    MAX_DEPTH: int = 1
+    MAX_DEPTH: int = 2  # Depth of crawl (0=homepage, 1=direct links, 2=2 levels deep, etc.)
     MAX_CONTENT_PARAGRAPHS: int = 10
     REQUESTS_TIMEOUT: int = 10
     PLAYWRIGHT_TIMEOUT: int = 60000
