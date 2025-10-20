@@ -343,8 +343,13 @@ async def crawl_url_job(url_job_id: int) -> None:
         for p in session.query(CrawledPage).filter_by(url_job_id=job.id).all()
     }
     
+    # Store initial final state for comparison
+    initial_final_pages = session.query(CrawledPage).filter_by(url_job_id=job.id).order_by(CrawledPage.page_score.desc()).all()
+    initial_final_urls = set(p.url for p in initial_final_pages)
+    initial_final_hashes = set(p.content_hash for p in initial_final_pages)
+    
     seen_in_this_crawl: Set[str] = set()
-    pages_with_content_changes: Set[str] = set()  # Track actual content changes
+    pages_with_content_changes: Set[str] = set()  # Track actual content changes (only existing pages that changed)
     visited: Set[str] = set()
     normalized_root_url = helper.normalize_url(job.url)
     queue = deque([(normalized_root_url, 0)])
@@ -433,6 +438,8 @@ async def crawl_url_job(url_job_id: int) -> None:
                         if old_hash != new_hash:
                             pages_with_content_changes.add(normalized_url)
                             logger.info(f"Content hash changed for {normalized_url}")
+                        else:
+                            logger.info(f"Content unchanged for {normalized_url}")
                     else:
                         # Create new page
                         logger.info(f"Creating new page: {normalized_url}")
@@ -523,25 +530,38 @@ async def crawl_url_job(url_job_id: int) -> None:
             job.status = "error"
             job.error_stack = "No pages were successfully crawled"
         else:
-            # Check if any pages have changed since last monitoring
-            pages_changed = False
-            if job.last_monitored:
-                pages_changed = len(pages_with_content_changes) > 0
-                if pages_changed:
-                    logger.info(f"Content changes detected in {len(pages_with_content_changes)} page(s)")
-            else:
-                pages_changed = True  # First crawl
+            # Compare final state after crawling with initial state before crawling
+            current_final_urls = set(p.url for p in final_pages)
+            current_final_hashes = set(p.content_hash for p in final_pages)
             
-            # Only regenerate llms.txt if pages changed or this is the first crawl
-            if pages_changed or not job.llm_text_content:
-                logger.info(f"Pages changed for {job.url}, regenerating llms.txt")
+            # Simple comparison: are the final page sets the same?
+            urls_changed = current_final_urls != initial_final_urls
+            content_changed = current_final_hashes != initial_final_hashes
+            final_state_changed = urls_changed or content_changed
+            
+            if final_state_changed:
+                if urls_changed:
+                    added_urls = current_final_urls - initial_final_urls
+                    removed_urls = initial_final_urls - current_final_urls
+                    logger.info(f"Final page set changed: {len(current_final_urls)} pages (was {len(initial_final_urls)})")
+                    if added_urls:
+                        logger.info(f"Added pages: {list(added_urls)}")
+                    if removed_urls:
+                        logger.info(f"Removed pages: {list(removed_urls)}")
+                if content_changed:
+                    logger.info("Content hashes changed in final set")
+            else:
+                logger.info("Final state unchanged - same pages with same content")
+            
+            # Only regenerate llms.txt if final state changed or this is the first crawl
+            if final_state_changed or not job.llm_text_content:
+                logger.info(f"Final state changed for {job.url}, regenerating llms.txt")
                 llm_text = helper.generate_llms_txt(final_pages, job.url)
                 job.llm_text_content = llm_text
                 job.content_hash = helper.get_text_hash(llm_text)
-                
                 logger.info(f"LLM text generated and stored in database ({len(final_pages)} pages)")
             else:
-                logger.info(f"No page changes detected for {job.url}, skipping llms.txt regeneration")
+                logger.info(f"Final state unchanged for {job.url}, skipping llms.txt regeneration")
             
             job.status = "completed"
             job.progress_percentage = 100
