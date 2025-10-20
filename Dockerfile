@@ -31,6 +31,8 @@ RUN apt-get update && apt-get install -y \
 
 # Install Playwright
 RUN pip install playwright
+# Clear any existing browser cache and install fresh
+RUN rm -rf /root/.cache/ms-playwright
 RUN playwright install chromium
 RUN playwright install-deps chromium
 
