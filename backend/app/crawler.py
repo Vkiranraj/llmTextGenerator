@@ -202,8 +202,8 @@ class WebCrawler:
         if not helper.is_valid_url(url):
             raise ValueError(f"Invalid URL: {url}")
             
-        if not self.robot_parser.can_fetch(settings.USER_AGENT, url):
-            raise Exception(f"Crawling disallowed by robots.txt for {url}")
+        # if not self.robot_parser.can_fetch(settings.USER_AGENT, url):
+        #     raise Exception(f"Crawling disallowed by robots.txt for {url}")
 
         try:
             response = self.session.get(url, timeout=settings.REQUESTS_TIMEOUT)
