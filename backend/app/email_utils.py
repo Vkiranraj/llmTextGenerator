@@ -18,7 +18,25 @@ def _get_encryption_key() -> bytes:
     Uses ENCRYPTION_KEY if set, otherwise falls back to SECRET_KEY.
     """
     encryption_key = settings.ENCRYPTION_KEY or settings.SECRET_KEY
+    
+    # If no key is set, generate a default one
+    if not encryption_key or encryption_key == "your-secret-key-change-in-production":
+        # Generate a default key for demo purposes
+        import base64
+        import os
+        default_key = base64.urlsafe_b64encode(os.urandom(32))
+        return default_key
+    
     # Ensure key is exactly 32 bytes for Fernet
+    try:
+        # Try to decode as base64 first
+        key_bytes = base64.urlsafe_b64decode(encryption_key.encode())
+        if len(key_bytes) == 32:
+            return key_bytes
+    except:
+        pass
+    
+    # Fallback: pad or truncate to 32 bytes
     key_bytes = encryption_key.encode()[:32].ljust(32, b'0')
     return key_bytes
 
