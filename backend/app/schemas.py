@@ -42,3 +42,19 @@ class JobProgress(BaseModel):
     
     class Config:
         from_attributes = True
+
+# Schema for validation errors
+class ValidationError(BaseModel):
+    error: str
+    field: Optional[str] = None
+    
+    class Config:
+        from_attributes = True
+
+# Schema for error responses
+class ErrorResponse(BaseModel):
+    detail: str
+    error_type: Optional[str] = None
+    
+    class Config:
+        from_attributes = True

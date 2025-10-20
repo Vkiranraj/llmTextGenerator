@@ -12,6 +12,7 @@ from . import crud, models, schemas
 from .database import engine, get_db
 from .core.config import settings
 from .crawler import crawl_url_job
+from .url_validator import url_validator
 
 sys.path.append(os.path.join(os.path.dirname(__file__), '..', 'scripts'))
 from monitor_urls import monitor_urls
@@ -45,6 +46,14 @@ def health_check():
 
 @app.post("/jobs/", response_model=schemas.JobResponse, tags=["Jobs"])
 def create_new_job(job: schemas.JobCreate, background_tasks: BackgroundTasks, db: Session = Depends(get_db)):
+    # Validate URL for security
+    validation_result = url_validator.validate_url(job.url)
+    if not validation_result.is_valid:
+        raise HTTPException(
+            status_code=400, 
+            detail=f"Invalid URL: {validation_result.error}"
+        )
+    
     # Check if URL already exists
     existing_job = crud.get_job_by_url(db, job.url)
     if existing_job:
