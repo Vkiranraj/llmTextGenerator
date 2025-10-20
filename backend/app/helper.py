@@ -107,6 +107,11 @@ def is_excluded_url(url: str) -> bool:
     # Exclude based on schemes like mailto, tel, etc.
     if any(url_lower.startswith(prefix) for prefix in ['mailto:', 'tel:', 'javascript:']):
         return True
+    
+    # Exclude Cloudflare email protection and other CDN utility links
+    excluded_paths = ['/cdn-cgi/l/email-protection', '/cdn-cgi/', '/__data.json']
+    if any(path in url_lower for path in excluded_paths):
+        return True
             
     # Exclude based on common file extensions
     excluded_extensions = ['.pdf', '.jpg', '.jpeg', '.png', '.gif', '.css', '.js', '.zip', '.mp4']
@@ -115,9 +120,6 @@ def is_excluded_url(url: str) -> bool:
             
     # Exclude URLs that are just fragments (anchor-only links)
     if url_lower.startswith('#'):
-        return True
-    # Exclude URLs that are too deep (more than 3 levels of nested pages)
-    if urlparse(url_lower).path.count("/") > 3:
         return True
 
     return False
