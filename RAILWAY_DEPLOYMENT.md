@@ -53,15 +53,7 @@ MAX_CONTENT_PARAGRAPHS=10
 REQUESTS_TIMEOUT=10
 PLAYWRIGHT_TIMEOUT=60000
 GRACE_PERIOD_CRAWLS=2
-```
-
-**Email Configuration (Optional)**:
-```
-SMTP_HOST=smtp.gmail.com
-SMTP_PORT=587
-SMTP_USER=your-email@gmail.com
-SMTP_PASSWORD=your-app-password
-FROM_EMAIL=noreply@yourdomain.com
+MONITORING_INTERVAL_MINUTES=1440
 ```
 
 ### 4. Add PostgreSQL Database

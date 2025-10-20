@@ -33,7 +33,6 @@ DATABASE_URL=sqlite:///./data/url_monitor.db
 
 # Security Configuration
 SECRET_KEY=your-secret-key-change-in-production
-ENCRYPTION_KEY=
 
 # OpenAI Configuration (Optional)
 OPENAI_API_KEY=your-openai-api-key-here
@@ -49,12 +48,8 @@ REQUESTS_TIMEOUT=10
 PLAYWRIGHT_TIMEOUT=60000
 GRACE_PERIOD_CRAWLS=2
 
-# Email Configuration (Optional)
-SMTP_HOST=smtp.gmail.com
-SMTP_PORT=587
-SMTP_USER=your-email@gmail.com
-SMTP_PASSWORD=your-app-password
-FROM_EMAIL=noreply@yourdomain.com
+# Monitoring Configuration
+MONITORING_INTERVAL_MINUTES=1440
 
 # Docker Configuration
 NGINX_PORT=80
@@ -95,12 +90,8 @@ Open your browser and go to: `http://localhost`
 - `MAX_DEPTH` - Maximum crawl depth (default: 1)
 - `MAX_CONTENT_PARAGRAPHS` - Maximum paragraphs to extract per page (default: 10)
 
-#### Email Configuration (Optional):
-- `SMTP_HOST` - SMTP server for email notifications
-- `SMTP_PORT` - SMTP port (usually 587 for TLS)
-- `SMTP_USER` - Your email username
-- `SMTP_PASSWORD` - Your email password or app password
-- `FROM_EMAIL` - The "from" email address for notifications
+#### Monitoring Configuration:
+- `MONITORING_INTERVAL_MINUTES` - Monitoring interval in minutes (default: 1440 for 24 hours)
 
 ### Docker Services
 
@@ -146,6 +137,12 @@ llmTextGenerator/
 - View the generated LLM text content
 - Copy or download the formatted content
 - Use for AI model training or analysis
+
+### 4. Monitor Content Changes
+- The system automatically monitors URLs for content changes
+- Monitoring runs daily at 2 AM
+- When changes are detected, the system automatically regenerates LLM text
+- View updated content in the web interface
 
 ### Logs and Debugging
 

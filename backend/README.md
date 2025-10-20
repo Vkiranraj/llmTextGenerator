@@ -1,17 +1,18 @@
 # LLM Text Generator Backend
 
-A FastAPI-based backend service for crawling websites and generating LLM text content. The service monitors URLs for content changes and provides email notifications.
+A FastAPI-based backend service for crawling websites and generating LLM text content. The service monitors URLs for content changes and automatically updates content when changes are detected.
 
 ## Features
 
 - **URL Crawling**: Crawl websites with configurable depth and page limits
 - **AI Enhancement**: OpenAI integration for intelligent categorization and summaries
 - **LLM Text Generation**: Extract and process content for LLM consumption
-- **Content Monitoring**: Track content changes over time
-- **Email Notifications**: Send alerts when content changes
+- **Content Monitoring**: Track content changes over time using content hashing
+- **Automated Updates**: Automatically regenerate content when changes are detected
 - **RESTful API**: Complete API for job management
 - **Database Storage**: SQLite/PostgreSQL support
 - **Single Container**: All services in one Docker container
+- **Cron Monitoring**: Automated background monitoring with configurable intervals
 
 ## Quick Start
 
@@ -65,7 +66,7 @@ railway up
 ```bash
 curl -X POST "http://localhost:8000/jobs/" \
   -H "Content-Type: application/json" \
-  -d '{"url": "https://example.com", "email": "user@example.com"}'
+  -d '{"url": "https://example.com"}'
 ```
 
 #### Get Job Status
@@ -78,12 +79,13 @@ curl "http://localhost:8000/jobs/1"
 curl "http://localhost:8000/jobs/1/download" -o content.txt
 ```
 
-### Email Management
+### Monitoring Management
 
 | Method | Endpoint | Description |
 |--------|----------|-------------|
-| `POST` | `/subscribe` | Subscribe to URL updates |
-| `GET` | `/unsubscribe` | Unsubscribe from updates |
+| `GET` | `/monitor/status` | Check monitoring system status |
+| `POST` | `/monitor/trigger` | Manually trigger monitoring |
+| `GET` | `/debug/config` | View configuration values |
 
 ## Configuration
 
@@ -94,12 +96,7 @@ curl "http://localhost:8000/jobs/1/download" -o content.txt
 | `DATABASE_URL` | `sqlite:///./url_monitor.db` | Database connection string |
 | `BASE_URL` | `http://localhost:8000` | Application base URL |
 | `SECRET_KEY` | `your-secret-key` | Secret key for encryption |
-| `ENCRYPTION_KEY` | | Email token encryption key |
-| `SMTP_HOST` | `smtp.gmail.com` | SMTP server host |
-| `SMTP_PORT` | `587` | SMTP server port |
-| `SMTP_USER` | | SMTP username |
-| `SMTP_PASSWORD` | | SMTP password |
-| `FROM_EMAIL` | `noreply@example.com` | Sender email address |
+| `MONITORING_INTERVAL_MINUTES` | `1440` | Monitoring interval in minutes |
 
 ### OpenAI Configuration
 
@@ -160,19 +157,21 @@ backend/
 - `last_crawled`: Last crawl timestamp
 - `error_stack`: Error details if failed
 
-### EmailSubscription
+### CrawledPage
 - `id`: Primary key
 - `job_id`: Associated job
-- `email`: Subscriber email
-- `created_at`: Subscription timestamp
+- `url`: Page URL
+- `title`: Page title
+- `content`: Page content
+- `created_at`: Creation timestamp
 
 ## Monitoring
 
 ### Automatic Monitoring
-- Runs daily at 2 AM via cron job
-- Checks for content changes
-- Sends email notifications
-- Updates job status
+- **Schedule**: Runs daily at 2 AM via cron job
+- **Change Detection**: Uses content hashing to detect modifications
+- **Automatic Updates**: Regenerates LLM text when changes detected
+- **Database Updates**: Updates job status and content in database
 
 ### Manual Monitoring
 ```bash
@@ -247,9 +246,9 @@ Note: API documentation is optional and can be disabled for production deploymen
 ### Common Issues
 
 1. **Database Connection**: Check `DATABASE_URL` setting
-2. **Email Notifications**: Verify SMTP credentials
-3. **Crawling Timeouts**: Adjust `PLAYWRIGHT_TIMEOUT`
-4. **Memory Issues**: Reduce `MAX_PAGES` setting
+2. **Crawling Timeouts**: Adjust `PLAYWRIGHT_TIMEOUT`
+3. **Memory Issues**: Reduce `MAX_PAGES` setting
+4. **Monitoring Issues**: Check cron job status and logs
 
 ### Health Checks
 ```bash
