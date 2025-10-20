@@ -225,7 +225,7 @@ class WebCrawler:
             logger.warning(f"Requests HTTP error for {url}: {e} (status: {status_code})")
             
             # Skip Playwright fallback for errors it can't help with
-            if status_code in [404, 500]:  # Not Found, Internal Server Error
+            if status_code in [403, 404, 500]:  # Forbidden, Not Found, Internal Server Error
                 logger.info(f"Skipping Playwright fallback for HTTP {status_code} - Playwright won't help")
                 raise  # Re-raise the original exception
             else:
