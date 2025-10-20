@@ -197,16 +197,18 @@ class WebCrawler:
     def _is_spa_shell(self, html: str, url: str) -> bool:
         """
         Detect if HTML is likely a JavaScript SPA shell with no rendered content.
-        Indicators: Few links, minimal content, SPA framework markers.
+        Indicators: Few links, minimal content, SPA framework markers, script-heavy pages.
         """
         soup = BeautifulSoup(html, 'html.parser')
         
-        # Count actual content links (not just navigation)
+        # Count actual content links (not just navigation/footer)
         links = soup.find_all('a', href=True)
         valid_links = [
             link for link in links 
-            if link.get('href') and not link.get('href').startswith('#')
+            if link.get('href') 
+            and not link.get('href').startswith('#')
             and not link.get('href').startswith('javascript:')
+            and not link.get('href').startswith('mailto:')
         ]
         
         # Check for common SPA framework indicators
@@ -217,8 +219,10 @@ class WebCrawler:
             soup.find('ng-app'),  # Angular
             soup.find('div', {'data-reactroot': True}),
             soup.find('div', {'data-react-root': True}),
+            # Also check for script tags with common SPA bundlers
+            soup.find('script', src=lambda x: x and ('webpack' in x or 'chunk' in x or 'bundle' in x or 'react' in x)),
         ]
-        has_spa_marker = any(indicator for indicator in spa_indicators)
+        has_spa_marker = any(indicator is not None for indicator in spa_indicators)
         
         # Check for minimal body content (mostly scripts and noscript)
         body = soup.find('body')
@@ -228,15 +232,32 @@ class WebCrawler:
                 elem for elem in body.find_all(['p', 'div', 'article', 'section', 'main'])
                 if elem.get_text(strip=True) and len(elem.get_text(strip=True)) > 20
             ]
-            has_minimal_content = len(content_elements) < 3
+            has_minimal_content = len(content_elements) < 5
         else:
             has_minimal_content = True
         
-        # Verdict: It's likely an SPA shell if it has framework markers and few links/content
-        is_spa = has_spa_marker and (len(valid_links) < 5 or has_minimal_content)
+        # Count script tags (lots of scripts often = SPA)
+        script_count = len(soup.find_all('script'))
+        has_many_scripts = script_count > 10
         
-        if is_spa:
-            logger.info(f"Detected SPA shell for {url} (links: {len(valid_links)}, spa_marker: {has_spa_marker}, minimal_content: {has_minimal_content})")
+        # Aggressive SPA detection:
+        # 1. Has SPA markers + (few links OR minimal content)
+        # 2. OR: Few links (<10) + many scripts + minimal content
+        # 3. OR: Very few links (<5) regardless of other factors (likely needs JS)
+        is_spa = (
+            (has_spa_marker and (len(valid_links) < 10 or has_minimal_content))
+            or (len(valid_links) < 10 and has_many_scripts and has_minimal_content)
+            or (len(valid_links) < 5)
+        )
+        
+        logger.info(
+            f"SPA detection for {url}: "
+            f"links={len(valid_links)}, "
+            f"spa_marker={has_spa_marker}, "
+            f"scripts={script_count}, "
+            f"minimal_content={has_minimal_content}, "
+            f"is_spa={is_spa}"
+        )
         
         return is_spa
     
@@ -307,7 +328,8 @@ class WebCrawler:
                     "title": title,
                     "html": html,
                     "etag": None,
-                    "last_modified": None
+                    "last_modified": None,
+                    "_used_playwright": True
                 }
             except Exception as e:
                 logger.error(f"Playwright fallback failed for {url}: {e}")
@@ -353,13 +375,35 @@ class WebCrawler:
         
         content = "\n".join(unique_parts[:settings.MAX_CONTENT_PARAGRAPHS])
         
-        # Extract links (unchanged)
+        # Extract links with detailed logging
         base_domain = urlparse(base_url).netloc
         links = set()
+        total_links = 0
+        excluded_count = 0
+        different_domain_count = 0
+        
         for link in soup.find_all("a", href=True):
+            total_links += 1
             href = urljoin(base_url, link["href"])
-            if not helper.is_excluded_url(href) and urlparse(href).netloc == base_domain:
-                links.add(href)
+            link_domain = urlparse(href).netloc
+            
+            if link_domain != base_domain:
+                different_domain_count += 1
+                continue
+                
+            if helper.is_excluded_url(href):
+                excluded_count += 1
+                continue
+                
+            links.add(href)
+        
+        logger.info(
+            f"Link discovery for {base_url}: "
+            f"total={total_links}, "
+            f"same_domain={total_links - different_domain_count}, "
+            f"excluded={excluded_count}, "
+            f"valid={len(links)}"
+        )
         
         return {
             "title": title,
@@ -467,6 +511,30 @@ async def crawl_url_job(url_job_id: int) -> None:
                     
                     page_data = await crawler.fetch_page_content(normalized_url)
                     parsed_data = crawler.parse_page_content(normalized_url, page_data["html"])
+                    
+                    # Fallback: If we got very few links and this is the root page, try Playwright
+                    # This catches cases where our SPA detection missed something
+                    if depth == 0 and len(parsed_data.get("links", [])) < 3 and not page_data.get("_used_playwright"):
+                        logger.warning(
+                            f"Root page {normalized_url} returned only {len(parsed_data['links'])} links. "
+                            f"Retrying with Playwright to ensure full rendering..."
+                        )
+                        try:
+                            # Force Playwright rendering
+                            browser = await crawler._get_browser()
+                            page = await browser.new_page()
+                            await page.goto(normalized_url, wait_until="networkidle", timeout=settings.PLAYWRIGHT_TIMEOUT)
+                            html = await page.content()
+                            await page.close()
+                            
+                            # Re-parse with Playwright content
+                            parsed_data = crawler.parse_page_content(normalized_url, html)
+                            page_data["html"] = html
+                            page_data["_used_playwright"] = True
+                            logger.info(f"Playwright retry successful. Found {len(parsed_data['links'])} links.")
+                        except Exception as e:
+                            logger.error(f"Playwright retry failed: {e}")
+                            # Continue with original data
                     
                     # Calculate content hash and score
                     new_hash = helper.get_text_hash(parsed_data["content"])

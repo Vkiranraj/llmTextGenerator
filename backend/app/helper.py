@@ -100,7 +100,8 @@ def generate_llms_txt(crawled_pages: list, root_url: str) -> str:
 def is_excluded_url(url: str) -> bool:
     """Check if URL should be excluded from crawling based on scheme or extension."""
     url_lower = url.lower()
-    bad_terms = ["login", "privacy", "terms", "cart", "faq"]
+    # Only exclude clearly non-content pages (not "faq" as it might have useful info)
+    bad_terms = ["/login", "/signin", "/signup", "/register", "/privacy-policy", "/terms-of-service", "/cart", "/checkout"]
     if any(t in url_lower for t in bad_terms):
         return True
         
