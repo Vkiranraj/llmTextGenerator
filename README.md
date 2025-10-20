@@ -34,7 +34,6 @@ See `RAILWAY_DEPLOYMENT.md` for Railway deployment instructions.
 - `OPENAI_API_KEY` - OpenAI API key for AI features
 - `MAX_PAGES` - Maximum pages to crawl (default: 30)
 - `MAX_DEPTH` - Crawl depth (default: 1)
-- `MONITORING_INTERVAL_MINUTES` - Monitoring interval in minutes (default: 1440 for 24 hours)
 
 ## Usage
 
@@ -77,7 +76,7 @@ The LLM Text Generator consists of several components working together:
 7. **Database updates** with new content and timestamps
 
 ### Change Detection Algorithm
-1. **Content Hashing**: Generate SHA-256 hash of crawled content
+1. **Content Hashing**: Generate SHA-256 hash of each crawled page
 2. **Previous Hash**: Retrieve stored hash from database
 3. **Comparison**: Compare current hash with previous hash
 4. **Change Detection**: If hashes differ, content has changed
@@ -171,39 +170,12 @@ CREATE TABLE crawled_pages (
 );
 ```
 
-## Architecture
-
-- **Backend**: FastAPI (Python) with SQLAlchemy
-- **Frontend**: React
-- **Database**: SQLite (local) or PostgreSQL (production)
-- **AI Integration**: OpenAI GPT models for content analysis
-- **Web Crawling**: Playwright for JavaScript-heavy sites
-- **Reverse Proxy**: Nginx for production deployment
-
 ## Development
 
 ### Prerequisites
 - Docker
 - Node.js (for frontend development)
 - Python 3.9+ (for backend development)
-
-### Local Development Setup
-```bash
-# Build and run the application
-docker build -t llm-text-generator .
-docker run -d -p 80:80 --env-file .env --name llm-text-generator llm-text-generator
-
-# View logs
-docker logs -f llm-text-generator
-
-# Stop the application
-docker stop llm-text-generator
-```
-
-### Making Changes
-- **Backend**: Edit files in `backend/app/`
-- **Frontend**: Edit files in `frontend/src/`
-- **Configuration**: Update `Dockerfile` or environment variables
 
 ## API Endpoints
 
