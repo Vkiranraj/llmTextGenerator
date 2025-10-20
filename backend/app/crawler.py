@@ -60,7 +60,6 @@ from bs4 import BeautifulSoup
 from sqlalchemy.orm import Session
 
 from . import helper
-from .core.config import settings
 from .database import SessionLocal
 from .models import URLJob, CrawledPage
 from .core.config import settings
@@ -328,6 +327,7 @@ async def crawl_url_job(url_job_id: int) -> None:
     }
     
     seen_in_this_crawl: Set[str] = set()
+    pages_with_content_changes: Set[str] = set()  # Track actual content changes
     visited: Set[str] = set()
     normalized_root_url = helper.normalize_url(job.url)
     queue = deque([(normalized_root_url, 0)])
@@ -398,6 +398,7 @@ async def crawl_url_job(url_job_id: int) -> None:
                     
                     if page_record:
                         # Update existing page
+                        old_hash = page_record.content_hash  # Store old hash
                         logger.info(f"Updating {normalized_url}")
                         page_record.content_hash = new_hash
                         page_record.page_title = parsed_data["title"]
@@ -410,6 +411,11 @@ async def crawl_url_job(url_job_id: int) -> None:
                         page_record.page_score = new_score
                         page_record.last_seen = current_crawl_time
                         page_record.not_seen_count = 0
+                        
+                        # Track if content actually changed
+                        if old_hash != new_hash:
+                            pages_with_content_changes.add(normalized_url)
+                            logger.info(f"Content hash changed for {normalized_url}")
                     else:
                         # Create new page
                         logger.info(f"Creating new page: {normalized_url}")
@@ -430,6 +436,7 @@ async def crawl_url_job(url_job_id: int) -> None:
                         )
                         session.add(page_record)
                         existing_pages[normalized_url] = page_record
+                        pages_with_content_changes.add(normalized_url)  # New pages are changes
                     
                     pages_fetched += 1
                     
@@ -502,11 +509,11 @@ async def crawl_url_job(url_job_id: int) -> None:
             # Check if any pages have changed since last monitoring
             pages_changed = False
             if job.last_monitored:
-                for page in final_pages:
-                    if page.last_seen and page.last_seen > job.last_monitored:
-                        pages_changed = True
-                        logger.info(f"Page {page.url} changed since last monitoring")
-                        break
+                pages_changed = len(pages_with_content_changes) > 0
+                if pages_changed:
+                    logger.info(f"Content changes detected in {len(pages_with_content_changes)} page(s)")
+            else:
+                pages_changed = True  # First crawl
             
             # Only regenerate llms.txt if pages changed or this is the first crawl
             if pages_changed or not job.llm_text_content:
