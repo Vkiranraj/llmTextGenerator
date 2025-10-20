@@ -36,7 +36,7 @@ class OpenAIService:
     
     def analyze_page_content(self, title: str, description: str, content: str) -> Dict[str, str]:
         """
-        Analyze page content and return both categorization and GEO-optimized summary.
+        Analyze page content and return both categorization and -optimized summary.
         
         Args:
             title: Page title
@@ -121,7 +121,7 @@ class OpenAIService:
     
     def generate_geo_summary(self, title: str, description: str, content: str) -> str:
         """
-        Generate GEO-optimized summary for LLM consumption.
+        Generate LLM-optimized summary for LLM consumption.
         
         Args:
             title: Page title
@@ -162,7 +162,8 @@ class OpenAIService:
             prompt = f"""
             Analyze these webpages and for each page provide:
             1. A single-word category
-            2. A concise, AI-optimized summary (2-3 sentences)
+            2. A concise, AI-optimized summary (2-3 sentences) - Avoid ambiguous terms or unexplained jargon. Use concise, clear language.
+
             
             Pages to analyze:
             {batch_content}
