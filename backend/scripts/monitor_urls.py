@@ -10,7 +10,6 @@ import os
 import datetime
 import logging
 from pathlib import Path
-from app.email_utils import send_bulk_notifications
 # Add the parent directory to the path so we can import from app
 sys.path.append(str(Path(__file__).parent.parent))
 
@@ -120,14 +119,8 @@ def monitor_urls():
                     job.status = "completed"
                     changed_urls.append(job.url)
                     
-                    # Send email notifications if content changed
-                    if job.llm_text_content:
-                        try:
-                            logger.info(f"Sending email notifications for {job.url}")
-                            send_bulk_notifications(job.id, job.llm_text_content, job.url)
-                            logger.info(f"Email notifications sent for {job.url}")
-                        except Exception as email_error:
-                            logger.error(f"Failed to send email notifications for {job.url}: {email_error}")
+                    # Content changed - no email notifications needed
+                    logger.info(f"Content changed for {job.url} - database updated")
                 else:
                     logger.info(f"No content changes for: {job.url}")
                     job.content_changed = False

@@ -18,8 +18,8 @@ export const jobService = {
   },
 
   // Create a new job
-  createJob: async (url, email = null) => {
-    const response = await api.post('/jobs/', { url, email });
+  createJob: async (url) => {
+    const response = await api.post('/jobs/', { url });
     return response.data;
   },
 

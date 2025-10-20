@@ -49,12 +49,6 @@ def create_new_job(job: schemas.JobCreate, db: Session = Depends(get_db)):
     existing_job = crud.get_job_by_url(db, job.url)
     if existing_job:
         # Return existing job instead of creating a new one
-        # Add email subscription if provided and not already subscribed
-        if job.email:
-            # Check if email is already subscribed to this job
-            existing_subscription = crud.get_email_subscription_by_email_and_job(db, existing_job.id, job.email)
-            if not existing_subscription:
-                crud.create_email_subscription(db, existing_job.id, job.email)
         
         return schemas.JobResponse(
             id=existing_job.id,
@@ -70,10 +64,6 @@ def create_new_job(job: schemas.JobCreate, db: Session = Depends(get_db)):
     # Create new job
     db_job = crud.create_job(db, job)
     
-    # Create email subscription if email provided
-    subscription = None
-    if job.email:
-        subscription = crud.create_email_subscription(db, db_job.id, job.email)
     
     # Start crawling in background
     import asyncio
@@ -167,44 +157,6 @@ def get_job_progress(job_id: int, db: Session = Depends(get_db)):
         status=job.status
     )
 
-@app.get("/unsubscribe", tags=["Email"])
-def unsubscribe_from_notifications(token: str, db: Session = Depends(get_db)):
-    """
-    Handle unsubscribe requests from email links.
-    """
-    try:
-        from .email_utils import decrypt_subscription_id
-        subscription_id = decrypt_subscription_id(token)
-        
-        success = crud.deactivate_subscription(db, subscription_id)
-        if success:
-            return """
-            <html>
-            <body>
-                <h2>Successfully Unsubscribed</h2>
-                <p>You have been unsubscribed from email notifications.</p>
-                <p>Thank you for using our service!</p>
-            </body>
-            </html>
-            """
-        else:
-            return """
-            <html>
-            <body>
-                <h2>Unsubscribe Failed</h2>
-                <p>Unable to unsubscribe. The subscription may have already been cancelled.</p>
-            </body>
-            </html>
-            """
-    except Exception as e:
-        return """
-        <html>
-        <body>
-            <h2>Invalid Unsubscribe Link</h2>
-            <p>The unsubscribe link is invalid or expired.</p>
-        </body>
-        </html>
-        """
 
 @app.post("/monitor/trigger")
 def trigger_monitoring():
@@ -287,45 +239,6 @@ def debug_environment():
         "python_version": os.system("python3 --version")
     }
 
-@app.get("/debug/email")
-def debug_email_config():
-    """
-    Debug email configuration and subscriptions.
-    """
-    from .core.config import settings
-    from .database import SessionLocal
-    from . import crud, models
-    
-    db = SessionLocal()
-    try:
-        # Check email configuration
-        email_config = {
-            "SMTP_HOST": settings.SMTP_HOST,
-            "SMTP_PORT": settings.SMTP_PORT,
-            "SMTP_USER": settings.SMTP_USER,
-            "SMTP_PASSWORD": "***" if settings.SMTP_PASSWORD else "NOT SET",
-            "FROM_EMAIL": settings.FROM_EMAIL
-        }
-        
-        # Check all jobs and their subscriptions
-        jobs = db.query(models.URLJob).all()
-        job_subscriptions = []
-        
-        for job in jobs:
-            subscriptions = crud.get_active_subscriptions_for_job(db, job.id)
-            job_subscriptions.append({
-                "job_id": job.id,
-                "url": job.url,
-                "status": job.status,
-                "subscriptions": [{"email": sub.email, "active": sub.is_active} for sub in subscriptions]
-            })
-        
-        return {
-            "email_config": email_config,
-            "jobs_and_subscriptions": job_subscriptions
-        }
-    finally:
-        db.close()
 
 @app.get("/debug/config")
 def debug_config():

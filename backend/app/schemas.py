@@ -8,9 +8,9 @@ from typing import Optional
 class URLJob(BaseModel):
     url: str
 
-# Schema for creating a new job (URL + optional email for monitoring)
+# Schema for creating a new job
 class JobCreate(URLJob):
-    email: Optional[str] = None
+    pass
 
 # Update your schemas.py file
 class Job(URLJob):
@@ -39,19 +39,6 @@ class JobProgress(BaseModel):
     progress_percentage: int
     progress_message: str
     status: str
-    
-    class Config:
-        from_attributes = True
-
-# Schema for email subscription
-class EmailSubscriptionCreate(BaseModel):
-    email: str
-
-class EmailSubscriptionResponse(BaseModel):
-    id: int
-    email: str
-    is_active: bool
-    created_at: datetime
     
     class Config:
         from_attributes = True

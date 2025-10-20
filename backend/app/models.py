@@ -37,7 +37,6 @@ class URLJob(Base):
     
     # Relationships
     pages = relationship("CrawledPage", back_populates="job", cascade="all, delete-orphan")
-    subscriptions = relationship("EmailSubscription", back_populates="job", cascade="all, delete-orphan")
 
 
 class CrawledPage(Base):
@@ -75,20 +74,3 @@ class CrawledPage(Base):
     # Relationships
     job = relationship("URLJob", back_populates="pages")
 
-
-class EmailSubscription(Base):
-    """
-    SQLAlchemy model for email subscriptions to URL monitoring.
-    Allows multiple users to subscribe to content change notifications for a URL.
-    """
-    __tablename__ = "email_subscriptions"
-    
-    id = Column(Integer, primary_key=True, index=True)
-    url_job_id = Column(Integer, ForeignKey("urls.id", ondelete="CASCADE"), nullable=False, index=True)
-    email = Column(String, nullable=False, index=True)
-    is_active = Column(Boolean, default=True, nullable=False)
-    created_at = Column(DateTime, server_default=func.now())
-    last_notified = Column(DateTime, nullable=True)
-    
-    # Relationship
-    job = relationship("URLJob", back_populates="subscriptions")

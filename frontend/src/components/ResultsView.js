@@ -48,14 +48,6 @@ const ResultsView = ({ job, onNewSubmission }) => {
           <div className="col-md-6">
             <h6>Status:</h6>
             <span className="badge bg-success">Completed</span>
-            {job.email && (
-              <div className="mt-2">
-                <small className="text-muted">
-                  <i className="fas fa-envelope me-1"></i>
-                  Monitoring enabled for {job.email}
-                </small>
-              </div>
-            )}
           </div>
         </div>
 
