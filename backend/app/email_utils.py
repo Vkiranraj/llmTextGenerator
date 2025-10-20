@@ -109,12 +109,13 @@ def send_email_notification(to_email: str, url: str, llm_text: str, subscription
         msg.attach(html_part)
         
         # Send email
+        logger.info(f"Attempting to send email to {to_email} via {settings.SMTP_HOST}:{settings.SMTP_PORT}")
         with smtplib.SMTP(settings.SMTP_HOST, settings.SMTP_PORT) as server:
             server.starttls()
             server.login(settings.SMTP_USER, settings.SMTP_PASSWORD)
             server.send_message(msg)
         
-        logger.info(f"Email notification sent to {to_email} for {url}")
+        logger.info(f"✅ Email notification sent to {to_email} for {url}")
         return True
         
     except Exception as e:
