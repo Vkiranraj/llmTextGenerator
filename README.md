@@ -1,7 +1,9 @@
 # LLM Text Generator
-
+I made several mistakes in this project:
+1. Was not super familiar of single page application which lead to incorrect utilization of the pupeteer. By right it should if no links fetched in a crawl, try puppeteer. 
+2. Next, I did not think too much about respecting context window to OPEN AI api call. 
 A web application that crawls websites and generates AI-enhanced, organized text content optimized for Large Language Models (LLMs).
-Here is a live deployed version: https://llmtextgenerator-production.up.railway.app/
+
 
 here is a demo recording: https://youtu.be/bTT25tNtdYg
 ## Features
